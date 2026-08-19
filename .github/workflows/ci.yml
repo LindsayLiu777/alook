@@ -79,6 +79,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm typegrep:ws
+      - run: pnpm typegrep:agent-driver
 
   knip:
     name: Dead Code Detection (knip)
