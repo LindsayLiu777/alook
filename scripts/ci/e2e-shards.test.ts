@@ -7,7 +7,40 @@ import {
   discoverE2eSpecs,
   E2E_SHARD_COUNT,
   planE2eShards,
+  resolvePlaywrightImage,
+  resolvePlaywrightVersion,
 } from "./e2e-shards.mjs"
+
+describe("resolvePlaywrightVersion", () => {
+  const lockfile = `
+importers:
+
+  src/web:
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.62.1
+        version: 1.62.1
+
+  src/ws-do:
+    dependencies: {}
+`
+
+  it("resolves the exact web importer version and official image", () => {
+    expect(resolvePlaywrightVersion(lockfile)).toBe("1.62.1")
+    expect(resolvePlaywrightVersion(lockfile.replaceAll("\n", "\r\n"))).toBe("1.62.1")
+    expect(resolvePlaywrightImage(lockfile)).toBe(
+      "mcr.microsoft.com/playwright:v1.62.1-noble",
+    )
+  })
+
+  it("rejects missing importers, missing dependencies, and malformed versions", () => {
+    expect(() => resolvePlaywrightVersion("importers:\n")).toThrow("src/web importer")
+    expect(() => resolvePlaywrightVersion(lockfile.replace("'@playwright/test'", "vitest")))
+      .toThrow("exact @playwright/test version")
+    expect(() => resolvePlaywrightVersion(lockfile.replace("version: 1.62.1", "version: latest")))
+      .toThrow("invalid @playwright/test version")
+  })
+})
 
 describe("discoverE2eSpecs", () => {
   it("discovers nested specs in deterministic order", () => {
@@ -37,7 +70,7 @@ describe("planE2eShards", () => {
     expect(first).toHaveLength(E2E_SHARD_COUNT)
     expect([...assigned].sort()).toEqual(specs)
     expect(new Set(assigned).size).toBe(specs.length)
-    expect(totals.sort((left, right) => left - right)).toEqual([155, 155, 155, 156, 157])
+    expect(totals.sort((left, right) => left - right)).toEqual([156, 157, 157, 157, 161])
     expect(Math.max(...totals) / Math.min(...totals)).toBeLessThanOrEqual(1.15)
   })
 
@@ -79,5 +112,8 @@ describe("createE2eMatrix", () => {
       "src/test/e2e-ui/nested/b.spec.ts",
     ])
     expect(matrix.include.every((entry) => entry.total === E2E_SHARD_COUNT)).toBe(true)
+    expect(matrix.include.every(
+      (entry) => entry.image === "mcr.microsoft.com/playwright:v1.62.1-noble",
+    )).toBe(true)
   })
 })
