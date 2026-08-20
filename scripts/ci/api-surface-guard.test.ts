@@ -68,7 +68,8 @@ describe("api surface approval guard", () => {
   it("keeps approval enforcement base-owned and never executes pull-request head code", () => {
     const workflow = readFileSync(resolve(process.cwd(), ".github/workflows/api-surface-guard.yml"), "utf8");
     expect(workflow).toContain("pull_request_target:");
-    expect(workflow).toContain("pull_request_review:");
+    expect(workflow).toMatch(/pull_request_review:\n\s+types: \[submitted, dismissed\]/);
+    expect(workflow).toContain("if: github.event.pull_request.base.ref == 'main'");
     expect(workflow).toContain("ref: ${{ github.event.pull_request.base.sha }}");
     expect(workflow).not.toContain("pnpm install");
     expect(workflow).not.toContain("pull request head");
