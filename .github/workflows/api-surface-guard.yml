@@ -1,0 +1,61 @@
+name: API Surface Guard
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  pull_request_review:
+    branches: [main]
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: api-surface-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  api-check:
+    name: API Report Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm api:check
+
+  api-surface-guard:
+    name: Current-head API Owner Approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout pull request head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Checkout trusted guard from base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: .api-guard
+      - name: Enforce current-head independent approval
+        env:
+          API_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          API_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          API_PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          API_PR_NUMBER: ${{ github.event.pull_request.number }}
+          API_REPOSITORY: ${{ github.repository }}
+          API_GITHUB_TOKEN: ${{ github.token }}
+          API_LABELS_JSON: ${{ toJSON(github.event.pull_request.labels) }}
+        run: |
+          guard=.api-guard/scripts/ci/api-surface-guard.mjs
+          if [[ ! -f "$guard" ]]; then guard=scripts/ci/api-surface-guard.mjs; fi
+          node "$guard"
