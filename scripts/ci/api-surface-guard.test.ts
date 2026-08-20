@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { evaluateApiSurfaceGuard } from "./api-surface-guard.mjs";
 
 const headSha = "b".repeat(40);
@@ -61,5 +63,15 @@ describe("api surface approval guard", () => {
       labels: [],
       reviews: [],
     })).toEqual({ ok: true, reason: "no_api_surface_change" });
+  });
+
+  it("keeps approval enforcement base-owned and never executes pull-request head code", () => {
+    const workflow = readFileSync(resolve(process.cwd(), ".github/workflows/api-surface-guard.yml"), "utf8");
+    expect(workflow).toContain("pull_request_target:");
+    expect(workflow).toContain("pull_request_review:");
+    expect(workflow).toContain("ref: ${{ github.event.pull_request.base.sha }}");
+    expect(workflow).not.toContain("pnpm install");
+    expect(workflow).not.toContain("pull request head");
+    expect(workflow).not.toContain("if [[ ! -f");
   });
 });

@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -62,41 +61,53 @@ export function evaluateApiSurfaceGuard(input) {
   return { ok: true, reason: "approved", approver: approver.login, changedApiPaths };
 }
 
-function git(args) {
-  return execFileSync("git", args, { cwd: process.cwd(), encoding: "utf8" }).trim();
+async function githubJson(url, token, allowNotFound = false) {
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+  if (allowNotFound && response.status === 404) return null;
+  if (!response.ok) throw new Error(`GitHub API failed: ${response.status}`);
+  return response.json();
 }
 
-function contractVersionAt(sha) {
-  try {
-    const source = git(["show", `${sha}:src/daemon/agent-driver/src/adapter-author.ts`]);
-    const match = source.match(/ADAPTER_AUTHOR_CONTRACT_VERSION\s*=\s*(\d+)/);
-    return match ? Number(match[1]) : null;
-  } catch {
-    return null;
+async function fetchAllPages(repository, pullNumber, resource, token) {
+  const values = [];
+  for (let page = 1; ; page += 1) {
+    const pageValues = await githubJson(
+      `https://api.github.com/repos/${repository}/pulls/${pullNumber}/${resource}?per_page=100&page=${page}`,
+      token,
+    );
+    values.push(...pageValues);
+    if (pageValues.length < 100) break;
   }
+  return values;
 }
 
 async function fetchAllReviews(repository, pullNumber, token) {
-  const reviews = [];
-  for (let page = 1; ; page += 1) {
-    const response = await fetch(`https://api.github.com/repos/${repository}/pulls/${pullNumber}/reviews?per_page=100&page=${page}`, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${token}`,
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    });
-    if (!response.ok) throw new Error(`GitHub review API failed: ${response.status}`);
-    const pageReviews = await response.json();
-    reviews.push(...pageReviews);
-    if (pageReviews.length < 100) break;
-  }
+  const reviews = await fetchAllPages(repository, pullNumber, "reviews", token);
   return reviews.filter((review) => review.user?.login).map((review) => ({
     id: review.id,
     login: review.user.login,
     state: review.state,
     commitId: review.commit_id,
   }));
+}
+
+async function contractVersionAt(repository, sha, token) {
+  const path = "src/daemon/agent-driver/src/adapter-author.ts";
+  const value = await githubJson(
+    `https://api.github.com/repos/${repository}/contents/${path}?ref=${sha}`,
+    token,
+    true,
+  );
+  if (!value?.content || value.encoding !== "base64") return null;
+  const source = Buffer.from(value.content, "base64").toString("utf8");
+  const match = source.match(/ADAPTER_AUTHOR_CONTRACT_VERSION\s*=\s*(\d+)/);
+  return match ? Number(match[1]) : null;
 }
 
 async function main() {
@@ -109,17 +120,21 @@ async function main() {
   if (!/^[0-9a-f]{40}$/i.test(baseSha) || !/^[0-9a-f]{40}$/i.test(headSha)) {
     throw new Error("Invalid base/head SHA");
   }
-  const changedPaths = git(["diff", "--name-only", baseSha, headSha]).split("\n").filter(Boolean);
+  const repository = process.env.API_REPOSITORY;
+  const pullNumber = process.env.API_PR_NUMBER;
+  const token = process.env.API_GITHUB_TOKEN;
+  const pull = await githubJson(`https://api.github.com/repos/${repository}/pulls/${pullNumber}`, token);
+  if (pull.base.sha !== baseSha || pull.head.sha !== headSha || pull.user.login !== process.env.API_PR_AUTHOR) {
+    throw new Error("Pull request identity changed while evaluating API approval");
+  }
+  const changedPaths = (await fetchAllPages(repository, pullNumber, "files", token))
+    .map((file) => file.filename);
   const labels = JSON.parse(process.env.API_LABELS_JSON ?? "[]").map((label) =>
     typeof label === "string" ? label : label.name
   );
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
   const ownerConfig = JSON.parse(await readFile(resolve(scriptRoot, ".github/api-surface-owners.json"), "utf8"));
-  const reviews = await fetchAllReviews(
-    process.env.API_REPOSITORY,
-    process.env.API_PR_NUMBER,
-    process.env.API_GITHUB_TOKEN,
-  );
+  const reviews = await fetchAllReviews(repository, pullNumber, token);
   const result = evaluateApiSurfaceGuard({
     changedPaths,
     labels,
@@ -127,8 +142,8 @@ async function main() {
     owners: ownerConfig.owners,
     prAuthor: process.env.API_PR_AUTHOR,
     headSha,
-    baseContractVersion: contractVersionAt(baseSha),
-    headContractVersion: contractVersionAt(headSha),
+    baseContractVersion: await contractVersionAt(repository, baseSha, token),
+    headContractVersion: await contractVersionAt(repository, headSha, token),
   });
   process.stdout.write(`${JSON.stringify(result)}\n`);
   if (!result.ok) process.exitCode = 1;
