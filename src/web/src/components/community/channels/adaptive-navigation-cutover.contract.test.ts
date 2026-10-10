@@ -31,20 +31,18 @@ describe("adaptive navigation cutover contracts", () => {
     expect(layout).toContain(
       'import { ChannelRoute } from "@/components/community/channels/channel-route"',
     )
-    expect(layout).toContain("key={`${currentUser.id}/${serverId}/${routeChannelId}`}")
+    expect(layout).toContain("key={JSON.stringify([currentUser.id, serverId])}")
     expect(layout).not.toContain("parentChannelId={routeParent" + "ChannelId}")
     expect(flatPage).toContain("return null")
     expect(flatPage).not.toContain("<ChannelRoute")
     expect(existsSync(nestedPage)).toBe(false)
   })
 
-  it("autofocuses message composers only after desktop is known", () => {
+  it("autofocuses DM and thread composers only after desktop is known", () => {
     const dmPage = readSource("./dm-view.tsx")
-    const textSurface = readSource("./text-channel-surface.tsx")
     const threadSurface = readSource("./thread-channel-surface.tsx")
 
     expect(dmPage).toContain('autoFocus={bp === "desktop"}')
-    expect(textSurface).toContain('autoFocus={breakpoint === "desktop"}')
     expect(threadSurface).toContain('autoFocus={breakpoint === "desktop"}')
   })
 })

@@ -1,6 +1,6 @@
 "use client"
 
-import type { ComponentProps } from "react"
+import { useLayoutEffect, useState, type ComponentProps } from "react"
 import { canManageServer, isForum, USE_SERVER_DEFAULT } from "@alook/shared"
 import { toastApiError } from "@/lib/api/client"
 import type { Channel } from "@/lib/community/models/navigation"
@@ -13,6 +13,13 @@ import type { OpenProfile } from "@/components/community/social/profile-types"
 import { ForumChannelSurface } from "@/components/community/channels/forum-channel-surface"
 import { TextChannelSurface } from "@/components/community/channels/text-channel-surface"
 import type { ChannelNotifLevel } from "@/components/community/channels/channel-header"
+import { ChannelHeaderSkeleton } from "@/components/community/channels/channel-header"
+import { ConversationMessageSkeleton } from "@/components/community/channels/conversation-message-skeleton"
+import { ForumViewSkeleton } from "@/components/community/channels/forum-view"
+import { ConversationResolutionErrorFrame } from "@/components/community/channels/conversation-resolution-error-frame"
+import { useChannelMetadata } from "@/hooks/community/use-channel-metadata"
+import { useCommunityRuntime } from "@/stores/community/runtime"
+import { communityWsClaimSecondaryChannel, communityWsReleaseSecondaryChannel } from "@/hooks/community/use-community-ws"
 
 export function ThreadSplitParentSurface({
   serverId,
@@ -25,6 +32,7 @@ export function ThreadSplitParentSurface({
   uiHandlers,
   onOpenChild,
   onOpenProfile,
+  onIdentity,
 }: {
   serverId: string
   serverParam: string
@@ -36,7 +44,22 @@ export function ThreadSplitParentSurface({
   uiHandlers: ComponentProps<typeof TextChannelSurface>["uiHandlers"]
   onOpenChild: (childId: string) => void
   onOpenProfile: OpenProfile
+  onIdentity: (parentId: string, confirmed: boolean) => void
 }) {
+  const metadata = useChannelMetadata(serverId, channel.id)
+  const runtime = useCommunityRuntime()
+  const [subscriptionOwner] = useState(() => Symbol("thread-split-secondary"))
+  useLayoutEffect(() => {
+    onIdentity(channel.id, metadata.identityKnown)
+    return () => onIdentity(channel.id, false)
+  }, [channel.id, metadata.identityKnown, onIdentity])
+  useLayoutEffect(() => {
+    if (metadata.canRead) communityWsClaimSecondaryChannel(runtime, subscriptionOwner, channel.id)
+    else communityWsReleaseSecondaryChannel(runtime, subscriptionOwner)
+    return () => {
+      communityWsReleaseSecondaryChannel(runtime, subscriptionOwner)
+    }
+  }, [channel.id, metadata.canRead, runtime, subscriptionOwner])
   const members = useChannelMemberViewModel({
     serverId,
     channelId: channel.id,
@@ -47,6 +70,7 @@ export function ThreadSplitParentSurface({
     isChildChannel: false,
     isNotifyUnit: false,
     currentUser: viewer,
+    accessAllowed: metadata.canRead,
   })
   const notifs = useNotificationSettings()
   const { mutate: setChannelNotif } = useSetChannelNotif()
@@ -55,6 +79,17 @@ export function ThreadSplitParentSurface({
     setChannelNotif({ channelId: channel.id, level }, {
       onError: (error) => toastApiError(error, "Failed to update notification level"),
     })
+  }
+
+  if (!metadata.canRead) {
+    if (metadata.status === "retryable-error") return <ConversationResolutionErrorFrame
+      retrying={metadata.retrying} onRetry={() => { void metadata.retry() }} />
+    return <>
+      <ChannelHeaderSkeleton kind={isForum(channel.type) ? "forum" : "text"} />
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {isForum(channel.type) ? <ForumViewSkeleton /> : <ConversationMessageSkeleton />}
+      </main>
+    </>
   }
 
   if (isForum(channel.type)) {
