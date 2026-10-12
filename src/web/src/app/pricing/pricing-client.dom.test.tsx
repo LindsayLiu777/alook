@@ -134,6 +134,23 @@ it("does not invent purchasable offers when the catalog is empty", async () => {
   expect(view.queryByText(/selected/)).not.toBeInTheDocument()
 })
 
+it.each([false, true])("keeps free document navigation with a validated empty paid catalog, signed-in=%s", async signedIn => {
+  state.api.mockResolvedValue({ ...catalog, offers: [] })
+  if (signedIn) {
+    state.session.data = { user: { id: "buyer" } }
+    state.billing.data = { ...free, offers: [] }
+  }
+  const view = render(<PricingClient />)
+  const action = await view.findByRole("button", { name: signedIn ? "Open Alook" : "Start free" })
+  await waitFor(() => expect(action).toBeEnabled())
+  expect(view.getAllByRole("button", { name: "Unavailable" })).toHaveLength(2)
+  await setupUser().click(action)
+  expect(state.assign).toHaveBeenCalledExactlyOnceWith(signedIn ? "/c/me/bots" : "/sign-in?redirect=%2Fc%2Fme%2Fbots")
+  expect(state.checkout).not.toHaveBeenCalled()
+  expect(state.portal).not.toHaveBeenCalled()
+  expect(state.pricingCta).toHaveBeenCalledExactlyOnceWith({ plan_id: "free", cta_action: signedIn ? "open_app" : "start_free", auth_state: signedIn ? "signed_in" : "guest", current_plan: signedIn ? "free" : "none", entry_point: "pricing_page" })
+})
+
 it("does not allow stale public prices to initiate purchase when account loading failed", async () => {
   state.session.data = { user: { id: "buyer" } }
   state.billing = { ...state.billing, isError: true }
