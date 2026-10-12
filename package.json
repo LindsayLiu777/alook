@@ -53,7 +53,7 @@
     "badge-maker": "6.0.0",
     "sharp": "^0.35.5",
     "simple-git-hooks": "^2.14.0",
-    "turbo": "^2.11.6",
+    "turbo": "^2.11.7",
     "typescript": "^6.0.3",
     "vitest": "4.1.11",
     "wrangler": "4.149.0"
@@ -64,7 +64,7 @@
       "@vitest/snapshot": "4.1.11"
     },
     "patchedDependencies": {
-      "@opennextjs/aws@4.1.4": "patches/@opennextjs__aws@4.1.4.patch"
+      "@opennextjs/cloudflare@1.20.10": "patches/@opennextjs__cloudflare@1.20.10.patch"
     },
     "onlyBuiltDependencies": [
       "better-sqlite3",
