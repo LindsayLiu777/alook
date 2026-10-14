@@ -1,0 +1,82 @@
+.notebook {
+  --note-paper: #fcf7ed;
+  --note-ink: #40382d;
+  --note-muted: #776956;
+  --note-rule: #ddd3c1;
+  --note-edge: #ded6c7;
+  --note-cover: #827f6d;
+  --note-wire: #3b403a;
+  --note-hole: #171815;
+  --note-stop: #a54d3d;
+  container: notebook / size;
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: min(420px, 50dvh);
+  min-height: 0;
+  color: var(--note-ink);
+}
+:global(.dark) .notebook {
+  --note-paper: #353229;
+  --note-ink: #eee6d5;
+  --note-muted: #beb29f;
+  --note-rule: #625b4d;
+  --note-edge: #777062;
+  --note-cover: #4a5048;
+  --note-wire: #5c6158;
+  --note-stop: #e6a696;
+}
+@media (min-width: 640px) {
+  .notebook { height: 100%; }
+}
+.stack {
+  position: absolute;
+  inset: 12px 0 -2px 12px;
+  border-radius: 5px;
+  border-bottom: 1.5px solid var(--note-cover);
+  background: repeating-linear-gradient(to right, var(--note-edge) 0 1px, var(--note-rule) 1px 2px) right top / 3px calc(100% - 10px) no-repeat, repeating-linear-gradient(to bottom, var(--note-edge) 0 1px, var(--note-rule) 1px 2px);
+  filter: drop-shadow(0 8px 9px rgb(44 40 31 / 12%));
+}
+.paper {
+  position: absolute;
+  inset: 8px 3px 8px 10px;
+  border-radius: 4px;
+  background: var(--note-paper);
+}
+.binding { position: absolute; top: 50%; left: 0; width: 30px; height: 192px; transform: translateY(-50%); pointer-events: none; overflow: visible; }
+@container notebook (min-height: 320px) {
+  .binding { height: 288px; }
+}
+@container notebook (min-height: 400px) {
+  .binding { height: 384px; }
+}
+.wire { fill: none; stroke: var(--note-wire); stroke-width: 2.25px; }
+.hole { fill: var(--note-hole); }
+.content { position: relative; display: flex; flex: 1; min-width: 0; min-height: 0; flex-direction: column; padding: 16px 18px 8px 42px; }
+.header { margin-bottom: 8px; }
+.tabs { display: flex; flex-shrink: 0; gap: 16px; margin-top: 0; border-bottom: 1px solid var(--note-rule); }
+.tab { position: relative; display: flex; min-width: 44px; min-height: 28px; align-items: center; justify-content: center; gap: 6px; padding-inline: 8px; border-radius: 5px; color: var(--note-muted); font-size: 12px; font-weight: 500; }
+.tabLabel { position: relative; display: inline-flex; height: 28px; align-items: center; }
+.tab[aria-selected="true"] { color: var(--note-ink); }
+.tab[aria-selected="true"]::after { position: absolute; inset: auto 8px -1px; height: 1.5px; background: currentColor; content: ""; }
+.tab:hover, .thought:hover { background: color-mix(in srgb, var(--note-ink) 4%, transparent); }
+.tab:active, .thought:active { background: color-mix(in srgb, var(--note-ink) 8%, transparent); }
+.entry { flex-shrink: 0; }
+.entry + .entry { margin-top: 16px; }
+.thought { display: flex; width: 100%; min-height: 21px; align-items: flex-start; padding: 4px 8px; border-radius: 5px; text-align: left; font-size: 13px; line-height: 21px; cursor: pointer; user-select: text; }
+.thought p { min-width: 0; line-height: inherit; }
+.footer { display: flex; flex-shrink: 0; min-height: 45px; align-items: center; gap: 8px; margin-top: 0; border-top: 1px solid var(--note-rule); padding-top: 0; font-size: 12px; line-height: 16px; }
+.footer > div { display: flex; align-items: center; }
+.stop { display: flex; min-width: 58px; min-height: 28px; flex-shrink: 0; align-items: center; justify-content: center; gap: 6px; padding-inline: 8px; border-radius: 5px; color: var(--note-stop); font-size: 12px; line-height: 16px; }
+.stopLabel { transform: translateY(1px); }
+.stop:hover { background: color-mix(in srgb, var(--note-stop) 6%, transparent); }
+.stop:active { background: color-mix(in srgb, var(--note-stop) 10%, transparent); }
+.stop:disabled { color: var(--note-muted); cursor: wait; }
+@media (max-width: 639px) {
+  .tab, .thought, .stop { min-height: 44px; }
+  .footer { min-height: 60px; }
+}
+.tab:focus-visible, .thought:focus-visible, .stop:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.scrollbar { scrollbar-color: var(--note-rule) transparent; }
+.scrollbar:hover { scrollbar-color: var(--note-muted) transparent; }
+.notebook ::selection { background: color-mix(in srgb, var(--note-ink) 15%, var(--note-paper)); }
