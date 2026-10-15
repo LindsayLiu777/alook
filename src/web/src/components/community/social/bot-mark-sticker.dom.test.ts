@@ -1,6 +1,7 @@
 import React from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { act, fireEvent, render as renderDom } from "@/test/react-dom-harness"
+import { act, fireEvent } from "@/test/react-dom-harness"
+import { renderCommunity as renderDom } from "@/test/community-owner-harness"
 
 const mocks = vi.hoisted(() => ({
   result: {
@@ -31,7 +32,8 @@ vi.mock("../avatar", () => ({
     "data-avatar-label": label,
   }),
 }))
-vi.mock("lucide-react", () => ({
+vi.mock("lucide-react", async (importOriginal) => ({
+  ...await importOriginal<typeof import("lucide-react")>(),
   Activity: "activity-icon",
   ChevronRight: "chevron-icon",
   CircleStop: "stop-icon",
@@ -153,19 +155,67 @@ describe("BotMarkSticker", () => {
     expect(props.onOpenActivity).not.toHaveBeenCalled()
   })
 
-  it("renders literal Unicode/newlines and retention metadata; clicking the body opens the audit", () => {
+  it("renders literal Unicode/newlines and retention metadata; the timestamp opens the audit", () => {
     const body = "一页正文🙂\n<b>Literal</b>"
     mocks.activity.events = [{ id: "text", kind: "text", payload: { text: body, truncated: true, chars: 200 }, createdAt: "2026-09-04T00:00:00.000Z" }]
     const { renderer, props } = render()
     const row = renderer.container.querySelector('[data-testid="community-bot-audit-preview-row-text"]')!
-    expect(row.querySelector("p")?.textContent).toBe(`${body}…`)
+    const content = row.querySelector("[data-community-message-body]")!
+    expect(content).toHaveTextContent("一页正文🙂")
+    expect(content).toHaveTextContent("<b>Literal</b>…")
+    expect(content.querySelector("br")).not.toBeNull()
     expect(row.querySelector("b")).toBeNull()
-    expect(row.querySelector("button")).toHaveAccessibleName(/^一页正文🙂\s+<b>Literal<\/b>…$/u)
+    expect(row.querySelector("button")).toHaveAccessibleName(row.querySelector("time")!.textContent!)
     expect(row.querySelector("button")).toHaveAccessibleDescription("Open full audit log")
     expect(row.textContent).not.toContain("Truncated")
     expect(row.querySelector("time")?.dateTime).toBe("2026-09-04T00:00:00.000Z")
     fireEvent.click(row.querySelector("button")!)
     expect(props.onOpenActivity).toHaveBeenCalledOnce()
+    fireEvent.click(content)
+    expect(props.onOpenActivity).toHaveBeenCalledTimes(2)
+  })
+
+  it("renders message Markdown and syntax without making inner controls open the audit", () => {
+    const text = "**Bold** and *emphasis* with `inline`\n\n- First item\n\n```ts\nconst value = 1\n```\n\n[Docs](https://example.com/docs) ||secret|| @Gus#1813"
+    mocks.activity.events = [{ id: "rich", kind: "text", payload: { text, truncated: false, chars: text.length }, createdAt: "2026-09-04T00:00:00.000Z" }]
+    const { renderer, props } = render()
+    const row = renderer.container.querySelector('[data-testid="community-bot-audit-preview-row-rich"]')!
+    const content = row.querySelector("[data-community-message-body]")!
+    expect(content.querySelector('[data-streamdown="strong"]')).toHaveTextContent("Bold")
+    expect(content.querySelector("em")).toHaveTextContent("emphasis")
+    expect(content.querySelector("li")).toHaveTextContent("First item")
+    expect(content.querySelector("code")).toHaveTextContent("inline")
+    expect(content.querySelector("pre")).toHaveTextContent("const value = 1")
+    expect(content.querySelector('[title="@Gus"]')).toHaveTextContent("@Gus")
+    expect(row.querySelector("button button, button a, button [data-community-message-body]")).toBeNull()
+
+    const link = content.querySelector("a")!
+    expect(link).toHaveAttribute("href", "https://example.com/docs")
+    expect(link).toHaveAttribute("data-message-external-link", "true")
+    link.addEventListener("click", (event) => event.preventDefault(), { once: true })
+    fireEvent.click(link)
+    fireEvent.click(renderer.getByRole("button", { name: "secret" }))
+    expect(props.onOpenActivity).not.toHaveBeenCalled()
+    fireEvent.click(row.querySelector('[title="Open full audit log"]')!)
+    expect(props.onOpenActivity).toHaveBeenCalledOnce()
+    fireEvent.click(content.querySelector("em")!)
+    expect(props.onOpenActivity).toHaveBeenCalledTimes(2)
+    const selection = window.getSelection()!
+    const range = document.createRange()
+    range.selectNodeContents(content)
+    selection.addRange(range)
+    fireEvent.click(content)
+    expect(props.onOpenActivity).toHaveBeenCalledTimes(2)
+    selection.removeAllRanges()
+  })
+
+  it("uses message HTML and link safety for thought text", () => {
+    const text = "<img src=x onerror=alert(1)> [bad](javascript:alert(1))"
+    mocks.activity.events = [{ id: "unsafe", kind: "text", payload: { text, truncated: false, chars: text.length }, createdAt: "2026-09-04T00:00:00.000Z" }]
+    const { renderer } = render()
+    const content = renderer.container.querySelector("[data-community-message-body]")!
+    expect(content).toHaveTextContent("<img src=x onerror=alert(1)>")
+    expect(content.querySelector("img, script, [onerror], a[href^='javascript:']")).toBeNull()
   })
 
   it("does not expose cached text after an authoritative ownership404", () => {
@@ -266,12 +316,12 @@ describe("BotMarkSticker", () => {
 
   it("shows up to three rich todo rows and a quiet overflow indicator", () => {
     mocks.result.marks = [
-      mark("1", "**First** task"),
-      mark("2"),
-      mark("3"),
+      mark("1", "**First** task with `code` and [Docs](https://example.com/marks) ||marked secret|| @Gus#1813"),
+      mark("2", "    const kept = true"),
+      mark("3", "   "),
       mark("4"),
     ]
-    const { renderer } = render()
+    const { renderer, props } = render()
     const marksTab = renderer.container.querySelectorAll('[role="tab"]')[1]!
     fireEvent.click(marksTab)
     const rows = renderer.container.querySelectorAll(
@@ -279,12 +329,22 @@ describe("BotMarkSticker", () => {
     )
 
     expect(rows).toHaveLength(3)
+    expect(rows[1]!.querySelector("pre")).toHaveTextContent("const kept = true")
+    expect(rows[2]).toHaveTextContent("Empty message")
     expect(renderer.container.textContent).toContain("First")
     expect(renderer.container.textContent).not.toContain("**First**")
     expect(renderer.container.textContent).toContain("Gus")
-    const messageContent = renderer.container.querySelector("p")!
-    expect(messageContent.className).toContain("text-xs")
-    expect(messageContent.className).toContain("leading-4")
+    const messageContent = rows[0]!.querySelector("[data-community-message-body]")!
+    expect(messageContent.querySelector('[data-streamdown="strong"]')).toHaveTextContent("First")
+    expect(messageContent.querySelector("code")).toHaveTextContent("code")
+    expect(messageContent.querySelector('[title="@Gus"]')).toHaveTextContent("@Gus")
+    const link = messageContent.querySelector("a")!
+    expect(link).toHaveAttribute("href", "https://example.com/marks")
+    link.addEventListener("click", (event) => event.preventDefault(), { once: true })
+    fireEvent.click(link)
+    fireEvent.click(renderer.getByRole("button", { name: "marked secret" }))
+    expect(props.onOpenActivity).not.toHaveBeenCalled()
+    expect(rows[0]!.querySelector("button button, button a, button [data-community-message-body]")).toBeNull()
     const overflow = renderer.container.querySelector(
       '[data-testid="community-bot-mark-sticker-overflow"]',
     )!
@@ -346,11 +406,12 @@ describe("BotMarkSticker", () => {
     )!
     expect(stop.disabled).toBe(false)
     const footer = renderer.container.querySelector("footer")!
-    expect(footer.textContent).toContain("running")
+    expect(footer.textContent).not.toContain("running")
+    expect(renderer.getByRole("status")).toHaveAccessibleName("Bot activity in progress")
     expect(footer.querySelector("time")).toBeNull()
     fireEvent.click(renderer.container.querySelectorAll('[role="tab"]')[1]!)
     expect(renderer.container.querySelector("footer")).toBe(footer)
-    expect(footer.textContent).toContain("running")
+    expect(footer.textContent).not.toContain("running")
     expect(footer.querySelector('[data-testid="community-bot-mark-sticker-stop"]')).toBe(stop)
     fireEvent.click(stop)
     expect(onStop).toHaveBeenCalledOnce()

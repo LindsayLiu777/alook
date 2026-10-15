@@ -250,9 +250,14 @@ describe("BotAuditPreview", () => {
   })
   it("can omit the running timestamp for the shared notebook footer", () => {
     const renderer = render(React.createElement(BotAuditActiveRow, { showTime: false }))
-    expect(renderer.container.textContent).toContain("running")
+    expect(renderer.container.textContent).not.toContain("running")
     expect(renderer.container.querySelector("time")).toBeNull()
-    expect(renderer.container.querySelectorAll('[class*="rounded-full"]')).toHaveLength(3)
+    expect(renderer.container.querySelectorAll('[class*="rounded-full"]')).toHaveLength(0)
+    const indicator = renderer.container.querySelector('[aria-hidden="true"]')!
+    expect(indicator).not.toBeNull()
+    expect(indicator.tagName).toBe("PRE")
+    expect(indicator.textContent!.split("\n")).toHaveLength(7)
+    expect(renderer.getByRole("status")).toHaveAccessibleName("Bot activity in progress")
   })
 
 })

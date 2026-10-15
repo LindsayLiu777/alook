@@ -3,7 +3,7 @@
 import { useAtom, useCreateAtom } from "@tanstack/react-store";
 
 
-import { AuditLogTextPayloadSchema, stripInlineMarkup } from "@alook/shared"
+import { AuditLogTextPayloadSchema } from "@alook/shared"
 import { CircleStop, LoaderCircle, Lock, Square } from "lucide-react"
 import { useEffect, useId, useLayoutEffect, useRef } from "react"
 import { useBotAuditPreview } from "@/hooks/community/use-bot-audit-preview"
@@ -11,6 +11,7 @@ import { useBotMarks } from "@/hooks/community/use-bot-marks"
 import { formatRelativeTime } from "@/lib/community/format-time"
 import { tid } from "@/lib/community/testids"
 import { Avatar } from "../avatar"
+import { MessageBody } from "../messages/message-body"
 import { BotAuditActiveRow } from "./bot-audit-preview"
 import styles from "./bot-mark-sticker.module.css"
 
@@ -151,12 +152,18 @@ export function BotMarkSticker({
               {activity.isLoading ? <StickerState label="Loading thoughts" /> : activity.isError ? <StickerState label="Thoughts unavailable" /> : visibleEvents.length === 0 ? <StickerState label="No recent thoughts" /> : visibleEvents.map((event) => {
                 const parsed = AuditLogTextPayloadSchema.safeParse(event.payload)
                 return <div key={event.id} data-testid={tid.botAuditPreviewRow(event.id)} className={styles.entry}>
-                  <div className="mb-1 flex items-center gap-2 px-2 text-[10px]" style={{ color: "var(--note-muted)" }}>
+                  <button type="button" onClick={onOpenActivity} title="Open full audit log"
+                    className={styles.thoughtTime}>
                     <time dateTime={event.createdAt}>{new Date(event.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>
-                  </div>
-                  <button type="button" onClick={onOpenActivity} title="Open full audit log" className={styles.thought}>
-                    <p className="whitespace-pre-wrap wrap-break-word">{parsed.success ? parsed.data.text : "Text unavailable"}{parsed.success && parsed.data.truncated && "…"}</p>
                   </button>
+                  <div className={styles.thought} onClick={(event) => {
+                    if (event.defaultPrevented || (event.target instanceof Element &&
+                      event.target.closest("a, button, input, select, textarea, summary, [role='button']"))) return
+                    if (window.getSelection()?.toString()) return
+                    onOpenActivity()
+                  }}>
+                    <MessageBody text={parsed.success ? `${parsed.data.text}${parsed.data.truncated ? "…" : ""}` : "Text unavailable"} />
+                  </div>
                 </div>
               })}
             </div>
@@ -185,7 +192,7 @@ export function BotMarkSticker({
                 const location = locationChannel
                   ? `${locationPrefix} · ${locationChannel}`
                   : locationPrefix
-                const content = stripInlineMarkup(mark.m.content ?? "").trim() || "Empty message"
+                const content = mark.m.content?.trim() ? mark.m.content : "Empty message"
                 return (
                   <div
                     key={mark.id}
@@ -224,9 +231,9 @@ export function BotMarkSticker({
                           </div>
                         </div>
                       </div>
-                      <p className="mt-1 line-clamp-2 text-xs leading-4">
-                        {content}
-                      </p>
+                      <div className={styles.markedBody}>
+                        <MessageBody text={content} />
+                      </div>
                     </div>
                   </div>
                 )

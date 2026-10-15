@@ -54,17 +54,20 @@
 .hole { fill: var(--note-hole); }
 .content { position: relative; display: flex; flex: 1; min-width: 0; min-height: 0; flex-direction: column; padding: 16px 18px 8px 42px; }
 .header { margin-bottom: 8px; }
-.tabs { display: flex; flex-shrink: 0; gap: 16px; margin-top: 0; border-bottom: 1px solid var(--note-rule); padding-bottom: 8px; }
+.tabs { display: flex; flex-shrink: 0; gap: 16px; margin-top: 0; border-bottom: 1px solid var(--note-rule); padding-bottom: 4px; }
 .tab { position: relative; display: flex; min-width: 44px; min-height: 28px; align-items: center; justify-content: center; gap: 6px; padding-inline: 8px; border-radius: 5px; color: var(--note-muted); font-size: 12px; font-weight: 500; }
 .tabLabel { position: relative; display: inline-flex; height: 28px; align-items: center; }
 .tab[aria-selected="true"] { color: var(--note-ink); }
-.tab[aria-selected="true"]::after { position: absolute; inset: auto 8px -9px; height: 1.5px; background: currentColor; content: ""; }
-.tab:hover, .thought:hover { background: color-mix(in srgb, var(--note-ink) 4%, transparent); }
-.tab:active, .thought:active { background: color-mix(in srgb, var(--note-ink) 8%, transparent); }
+.tab[aria-selected="true"]::after { position: absolute; inset: auto 8px -5px; height: 1.5px; background: currentColor; content: ""; }
+.tab:hover, .thoughtTime:hover { background: color-mix(in srgb, var(--note-ink) 4%, transparent); }
+.tab:active, .thoughtTime:active { background: color-mix(in srgb, var(--note-ink) 8%, transparent); }
 .entry { flex-shrink: 0; }
 .entry + .entry { margin-top: 16px; }
-.thought { display: flex; width: 100%; min-height: 21px; align-items: flex-start; padding: 4px 8px; border-radius: 5px; text-align: left; font-size: 13px; line-height: 21px; cursor: pointer; user-select: text; }
-.thought p { min-width: 0; line-height: inherit; }
+.thoughtTime { display: block; margin-bottom: 4px; padding-inline: 8px; border-radius: 5px; color: var(--note-muted); font-size: 10px; line-height: 16px; }
+.thought { min-width: 0; width: 100%; padding: 4px 8px; font-size: 13px; line-height: 21px; cursor: pointer; user-select: text; }
+.markedBody { min-width: 0; margin-top: 4px; font-size: 12px; line-height: 16px; }
+.thought > :global([data-community-message-body]), .markedBody > :global([data-community-message-body]) { min-width: 0; max-width: 100%; color: inherit; font-size: inherit; line-height: inherit; }
+.notebook :global([data-streamdown="table"]) { width: max-content !important; min-width: 100%; max-width: none; table-layout: auto; }
 .footer { display: flex; flex-shrink: 0; min-height: 45px; align-items: center; gap: 8px; margin-top: 0; border-top: 1px solid var(--note-rule); padding-top: 0; font-size: 12px; line-height: 16px; }
 .footer > div { display: flex; align-items: center; }
 .stop { display: flex; min-width: 58px; min-height: 28px; flex-shrink: 0; align-items: center; justify-content: center; gap: 6px; padding-inline: 8px; border-radius: 5px; color: var(--note-stop); font-size: 12px; line-height: 16px; }
@@ -73,10 +76,10 @@
 .stop:active { background: color-mix(in srgb, var(--note-stop) 10%, transparent); }
 .stop:disabled { color: var(--note-muted); cursor: wait; }
 @media (max-width: 639px) {
-  .thought, .stop { min-height: 44px; }
+  .thoughtTime, .stop { min-height: 44px; }
   .footer { min-height: 60px; }
 }
-.tab:focus-visible, .thought:focus-visible, .stop:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.tab:focus-visible, .thoughtTime:focus-visible, .stop:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .scrollbar { scrollbar-color: var(--note-rule) transparent; }
 .scrollbar:hover { scrollbar-color: var(--note-muted) transparent; }
 .notebook ::selection { background: color-mix(in srgb, var(--note-ink) 15%, var(--note-paper)); }

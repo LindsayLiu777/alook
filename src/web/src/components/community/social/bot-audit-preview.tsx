@@ -13,6 +13,8 @@ import {
 } from "@/lib/community/audit-event-summary"
 import { tid } from "@/lib/community/testids"
 
+import { ThreeBodyIndicator } from "./three-body-indicator"
+
 type BotAuditTone = "default" | "note"
 
 const BOT_NOTE_ROW_CLASS = "grid min-h-5 shrink-0 grid-cols-[3.25rem_minmax(0,1fr)] items-center gap-2 px-[2px] text-xs leading-5"
@@ -187,13 +189,13 @@ export function BotAuditActiveRow({
       >
         {formatAuditPreviewTime(displayedAt)}
       </time>}
-      <span className="flex items-center gap-1" aria-label="Bot activity in progress">
-        <span className={!showTime ? "mr-1 text-xs" : tone === "note" ? "mr-1 text-xs text-black" : "mr-1 text-xs text-primary/70"}>running</span>
-        {[0, 1, 2].map((index) => (
+      <span className="flex items-center gap-1" role={!showTime ? "status" : undefined} aria-label="Bot activity in progress">
+        {showTime && <span className={tone === "note" ? "mr-1 text-xs text-black" : "mr-1 text-xs text-primary/70"}>running</span>}
+        {!showTime ? <ThreeBodyIndicator /> : [0, 1, 2].map((index) => (
           <span
             key={index}
             aria-hidden
-            className={!showTime ? "size-1.5 rounded-full bg-current motion-safe:animate-pulse motion-reduce:animate-none" : tone === "note"
+            className={tone === "note"
               ? "size-1.5 rounded-full bg-black motion-safe:animate-pulse motion-reduce:animate-none"
               : "size-1.5 rounded-full bg-primary motion-safe:animate-pulse motion-reduce:animate-none"}
             style={{ animationDelay: `${index * 160}ms` }}
