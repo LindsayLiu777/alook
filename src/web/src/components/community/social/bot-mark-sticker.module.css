@@ -54,11 +54,11 @@
 .hole { fill: var(--note-hole); }
 .content { position: relative; display: flex; flex: 1; min-width: 0; min-height: 0; flex-direction: column; padding: 16px 18px 8px 42px; }
 .header { margin-bottom: 8px; }
-.tabs { display: flex; flex-shrink: 0; gap: 16px; margin-top: 0; border-bottom: 1px solid var(--note-rule); }
+.tabs { display: flex; flex-shrink: 0; gap: 16px; margin-top: 0; border-bottom: 1px solid var(--note-rule); padding-bottom: 8px; }
 .tab { position: relative; display: flex; min-width: 44px; min-height: 28px; align-items: center; justify-content: center; gap: 6px; padding-inline: 8px; border-radius: 5px; color: var(--note-muted); font-size: 12px; font-weight: 500; }
 .tabLabel { position: relative; display: inline-flex; height: 28px; align-items: center; }
 .tab[aria-selected="true"] { color: var(--note-ink); }
-.tab[aria-selected="true"]::after { position: absolute; inset: auto 8px -1px; height: 1.5px; background: currentColor; content: ""; }
+.tab[aria-selected="true"]::after { position: absolute; inset: auto 8px -9px; height: 1.5px; background: currentColor; content: ""; }
 .tab:hover, .thought:hover { background: color-mix(in srgb, var(--note-ink) 4%, transparent); }
 .tab:active, .thought:active { background: color-mix(in srgb, var(--note-ink) 8%, transparent); }
 .entry { flex-shrink: 0; }
