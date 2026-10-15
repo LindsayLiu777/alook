@@ -73,7 +73,7 @@
 .stop:active { background: color-mix(in srgb, var(--note-stop) 10%, transparent); }
 .stop:disabled { color: var(--note-muted); cursor: wait; }
 @media (max-width: 639px) {
-  .tab, .thought, .stop { min-height: 44px; }
+  .thought, .stop { min-height: 44px; }
   .footer { min-height: 60px; }
 }
 .tab:focus-visible, .thought:focus-visible, .stop:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
