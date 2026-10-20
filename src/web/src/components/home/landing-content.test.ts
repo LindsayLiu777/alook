@@ -230,7 +230,7 @@ describe("landing content contract", () => {
     expect(rootRoute).toContain("LandingPage")
     expect(rootRoute).toContain("getSession")
     expect(rootRoute).toContain("<LandingPage isLoggedIn={!!session} />")
-    expect(rootRoute).toContain('canonical: "https://alook.ai"')
+    expect(rootRoute).toContain('path: "/"')
     expect(rootRoute).not.toContain("HomePage")
     expect(rootRoute).not.toContain("FAQPage")
     expect(rootRoute).not.toContain("Personal Company")
