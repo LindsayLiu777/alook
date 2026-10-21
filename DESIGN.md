@@ -189,6 +189,22 @@ State must be *visible*, and it must come from tokens — not ad-hoc tweaks. Eve
 - **Destructive** — `destructive` fill, reserved for irreversible actions; confirm before firing.
 - Inputs use `input` for the border and `ring` for focus. Match the control's radius to the Shape scale.
 
+### Landing testimonials
+
+A landing-only extension of the inherited green/CRT world, immediately before the FAQ. This record describes `landing-testimonials.tsx`, its CSS module, and the shared MessageAuthorLine and Avatar primitives; it does not establish a new global direction.
+
+**Palette and type.** Transparent message rows use the landing background and text tokens; handles, source icons and avatar fallback initials use landing muted text. Hover and keyboard focus add the landing surface tint. The CRT heading keeps its regular weight, fluid display size (`clamp(3rem, 4.6vw, 5rem)`), tight leading (0.98) and tracking (-0.025em). Native author names are semibold (15px); handles are subordinate (12px). Quotes use the inherited sans family (15px, line-height 1.375), preserve line breaks and wrap long words.
+
+**Layout and shape.** The introduction follows the inherited content width and page gutter. Two full-width clipped lanes carry unboxed rows with round large avatars (40px), an avatar-to-body gap (8px), and no fixed post height. Rows are 360px wide with 40px spacing; below 640px, widths fit within the viewport with 48px clearance and spacing becomes 24px. Lane spacing changes from 32px to 24px at the same boundary. The whole row is a source anchor with 8px interaction padding, a small corner radius (4px) and a minimum target height (44px). There are no resting card surfaces, card borders or shadows.
+
+**The Native Attribution Rule.** Keep the source arrow beside the name, with both vertically centered in the author row and an 8px gap. The handle sits below; quote text follows with 8px separation and a maximum of three visible lines with CSS ellipsis. Preserve the full exact quotation in the document. The entire row opens the original in a new tab and includes an accessible source notice; the icon is decorative. There is no visible source label or separate source control.
+
+**The Readable Motion Rule.** Preserve both opposing lanes (100s forward and 110s reverse, linear and continuous). Hover or an active press on the wall pauses the current transform; it does not replace the pressed link. Keyboard-visible focus removes animation, hides loop copies and enables manual horizontal lane scrolling with the shared thin scrollbar. Reduced motion uses the same static manual-reading layout. Focused rows retain a visible landing-text outline (2px, offset 4px). No Pause/Resume control or reading disclosure is present.
+
+**The Single Reading Copy Rule.** Expose the 20 original source links once to assistive technology and keyboard navigation. Repeated loop groups are `aria-hidden`, with their links outside the tab order; originals remain accessible in the moving lanes. These are attributed community comments, not a new claim of verified customers.
+
+Component-only extension metadata and a self-contained source-row preview are recorded in `.impeccable/design.json`. Existing global documentation and token ownership remain unchanged.
+
 ## Patterns
 
 ### Progressive disclosure

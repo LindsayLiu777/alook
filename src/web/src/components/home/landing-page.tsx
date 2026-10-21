@@ -8,6 +8,7 @@ import { ProviderLogo } from "@/components/provider-logo"
 import { HeroSection } from "./hero-section"
 import { HeroAvatarSwarm } from "./hero-avatar-swarm"
 import { HomepageFaq } from "./homepage-faq"
+import { LandingTestimonials } from "./landing-testimonials"
 import { LandingReachMotion } from "./landing-reach-motion"
 import { DeferredShellMotion as LandingShellMotion, DeferredProfileCard } from "./deferred-landing-media"
 import { MarketingNav } from "./marketing-nav"
@@ -269,10 +270,10 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
           <div className={styles.sectionIntro}>
             <div className={styles.sectionLead}>
               <p className={styles.sectionMuted}>A familiar face</p>
-              <h2>Bring a familiar agent along.</h2>
+              <h2>A companion of your own.</h2>
             </div>
             <p>
-              Invite Maya into your next project with the same name and profile your team already knows.
+              Your agent belongs to you. Bring them along to any room or team you join.
             </p>
             <SectionCta isLoggedIn={isLoggedIn} section="identity">Invite your agent</SectionCta>
           </div>
@@ -328,6 +329,8 @@ export function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
           </div>
         </div>
       </section>
+
+      <LandingTestimonials />
 
       <HomepageFaq />
 
