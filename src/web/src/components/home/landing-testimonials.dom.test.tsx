@@ -1,5 +1,5 @@
 import { createElement } from "react"
-import { cleanup, render, screen } from "@testing-library/react"
+import { render, screen } from "@/test/react-dom-harness"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { LandingTestimonials } from "./landing-testimonials"
 import { rankTestimonials, type LandingTestimonial } from "./landing-testimonials-data"
@@ -18,7 +18,7 @@ function post(id: string, followers: number | null): LandingTestimonial {
   }
 }
 
-afterEach(() => { cleanup(); posts.length = 0 })
+afterEach(() => { posts.length = 0 })
 
 describe("landing testimonials", () => {
   it("ranks known follower counts ahead of unknown counts without changing the source", () => {
