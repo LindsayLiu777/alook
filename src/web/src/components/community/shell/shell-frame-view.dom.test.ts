@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { act, render } from "@/test/react-dom-harness"
 import { ShellFrameView } from "./shell-frame-view"
 import { CommunitySessionPendingFrame } from "./community-session-pending-frame"
-import type { CommunityCheckpointPlan, CommunitySurface } from "@/lib/community/community-route"
+import { normalizeCommunityHref, resolveCommunityCheckpointPlan, type CommunityCheckpointPlan, type CommunitySurface } from "@/lib/community/community-route"
 import {
   COMMUNITY_LAYOUT_PREPAINT_ATTRIBUTE,
   desktopUserBarInitialOverlayCssWidth,
@@ -49,6 +49,9 @@ vi.mock("@/components/community/channels/dm-route", () => ({
     useLayoutEffect(() => { mocks.dmMount(dmId); return () => { mocks.dmUnmount(dmId) } }, [dmId])
     return createElement("main", { "data-dm-target": dmId, "data-committed": String(routeCommitted) }, "Cached DM")
   },
+}))
+vi.mock("./community-module-route", () => ({
+  CommunityModuleRoute: ({href, routeCommitted}: {href: string; routeCommitted: boolean}) => createElement("main", {"data-module-target": href, "data-committed": String(routeCommitted)}, createElement("input", {"aria-label": "Retained module state"})),
 }))
 vi.mock("react-resizable-panels", () => ({
   useDefaultLayout: (options: Record<string, unknown>) => {
@@ -124,6 +127,7 @@ vi.mock("@/components/ui/app-surface", () => ({
 vi.mock("./shell", () => ({
   Shell: ({ children, ...props }: Record<string, unknown>) => createElement("div", { ...props, "data-shell-root": "" }, children as ReactNode),
 }))
+vi.mock("./server-sidebar-slot", () => ({ ServerSidebarSlot: () => null }))
 vi.mock("./dm-sidebar-slot", () => ({ DmSidebarSlot: () => null }))
 vi.mock("./server-rail", () => ({
   ServerRail: (props: Record<string, unknown>) => {
@@ -230,6 +234,24 @@ const extensionProps = {
 let animateDescriptor: PropertyDescriptor | undefined
 
 describe("ShellFrameView", () => {
+  it("keeps neutral root presentation under the same host before a target consumer takes over", () => {
+    const common = { ...extensionProps, breakpoint: "unknown" as const, sidebar: () => null, rail, profile, inbox }
+    const root: CommunityCheckpointPlan = { ...committedCheckpoint("/c", "list"), main: { kind: "module-route", href: "/c", module: "route-resolution" } }
+    const target: CommunityCheckpointPlan = { ...committedCheckpoint("/c/me/friends", "list"), main: { kind: "module-route", href: "/c/me/friends", module: "friends" } }
+    const view = render(createElement(ShellFrameView, { ...common, checkpoint: root }))
+    expect(view.container.querySelector('[data-slot="community-shell-root"]')).toBeNull()
+    expect(view.container.querySelector('[aria-label="Loading community"][aria-busy="true"]')).not.toBeNull()
+    expect(view.container.querySelector('[data-server-rail], [data-user-bar], [data-shell-overlays]')).toBeNull()
+    expect(view.container.querySelector('[data-module-target="/c"]')).not.toBeNull()
+    view.rerender(createElement(ShellFrameView, { ...common, breakpoint: "desktop", checkpoint: target, routeCommitted: false }))
+    const input = view.getByRole("textbox") as HTMLInputElement
+    input.value = "Target draft"
+    expect(view.container.querySelector('[data-slot="community-shell-root"]')).not.toBeNull()
+    view.rerender(createElement(ShellFrameView, { ...common, breakpoint: "desktop", checkpoint: target, routeCommitted: true }))
+    expect(view.getByRole("textbox")).toBe(input)
+    expect(input).toHaveValue("Target draft")
+  })
+
   beforeEach(() => {
     vi.unstubAllGlobals()
     mocks.onLayoutChanged.mockClear()
@@ -266,6 +288,26 @@ describe("ShellFrameView", () => {
     else delete (HTMLElement.prototype as unknown as Record<string, unknown>).animate
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+  })
+
+  it.each(["/c/channels/s2/c2?threadView=full", "/c/me/friends?tab=new", "/c/me/bots?audit=b1", "/c/me/machines?reconnect=m1"])("retains the selected real-consumer slot through commit for %s", href => {
+    const source = {...normalizeCommunityHref("/c/channels/s1/c1"), revision: 1}
+    const target = {...normalizeCommunityHref(href.split("?")[0]!), revision: 2}
+    const props = (committed: boolean) => ({...extensionProps, breakpoint: "desktop" as const, routeCommitted: committed, rail, profile, inbox,
+      sidebar: () => createElement("sidebar-content"), checkpoint: resolveCommunityCheckpointPlan({committedFrame: committed ? target : source, targetHref: href, pending: !committed, targetReady: true})})
+    const view = render(createElement(ShellFrameView, props(false), createElement("old-next-page")))
+    const body = view.container.querySelector("[data-module-target]")!
+    const input = view.getByLabelText("Retained module state") as HTMLInputElement
+    input.value = "Retained"
+    expect(body).toHaveAttribute("data-module-target", href)
+    expect(body).toHaveAttribute("data-committed", "false")
+    expect(view.container.querySelector("old-next-page")).toBeNull()
+    view.rerender(createElement(ShellFrameView, props(true), createElement("new-next-page")))
+    expect(view.container.querySelector("[data-module-target]")).toBe(body)
+    expect(view.getByLabelText("Retained module state")).toBe(input)
+    expect(input).toHaveValue("Retained")
+    expect(body).toHaveAttribute("data-committed", "true")
+    expect(view.container.querySelector("new-next-page")).toBeNull()
   })
 
   it("mounts the selected DM before Next publication and retains the same body at commit", () => {
@@ -890,7 +932,6 @@ describe("ShellFrameView", () => {
     expect(renderer.container.querySelector("[data-channel-loading-frame]")).not.toBeNull()
     expect(mocks.pendingProps).toHaveBeenLastCalledWith(expect.objectContaining({
       href: "/c/channels/s1/c2",
-      conversationSubtype: undefined,
     }))
     expect(renderer.container.querySelector("[data-community-mobile-transition]")).toBeNull()
 
@@ -914,7 +955,6 @@ describe("ShellFrameView", () => {
           main: {
             kind: "target-skeleton",
             href: "/c/channels/s1/c3",
-            conversationSubtype: "thread",
           },
         },
       },
@@ -922,7 +962,6 @@ describe("ShellFrameView", () => {
     ))
     expect(mocks.pendingProps).toHaveBeenLastCalledWith(expect.objectContaining({
       href: "/c/channels/s1/c3",
-      conversationSubtype: "thread",
     }))
     renderer.rerender(createElement(
       ShellFrameView,

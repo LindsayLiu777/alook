@@ -150,7 +150,7 @@ describe("community route", () => {
       targetHref: "/malformed",
       rail: { kind: "keep" },
       sidebar: { kind: "keep" },
-      main: { kind: "keep" },
+      main: { kind: "server-route", href: "/c/channels/s1/c1" },
     })
   })
 
@@ -174,6 +174,22 @@ describe("community route", () => {
       pending: true,
       targetReady,
     }).mode).toBe(mode)
+  })
+
+  it("uses the real cross-server consumer and target-scoped canonical sidebar", () => {
+    expect(resolveCommunityCheckpointPlan({
+      committedFrame: { ...normalizeCommunityHref("/c/channels/s1/c1"), revision: 2 },
+      targetHref: "/c/channels/s2/c2?msg=m2", pending: true, targetReady: true,
+    })).toMatchObject({ mode: "warm-scope", rail: {kind: "target", view: "server", activeServerId: "s2"},
+      sidebar: {kind: "keep"}, main: {kind: "server-route", href: "/c/channels/s2/c2?msg=m2"} })
+  })
+
+  it.each(["friends", "bots", "machines"] as const)("selects the %s consumer with target parameters before and after commit", module => {
+    const href = `/c/me/${module}?target=one`
+    const pending = resolveCommunityCheckpointPlan({committedFrame: {...normalizeCommunityHref("/c/channels/s1/c1"), revision: 1}, targetHref: href, pending: true, targetReady: true})
+    const committed = resolveCommunityCheckpointPlan({committedFrame: {...normalizeCommunityHref(href.split("?")[0]!), revision: 2}, targetHref: href, pending: false, targetReady: true})
+    expect(pending.main).toEqual({kind: "module-route", module, href})
+    expect(committed.main).toEqual(pending.main)
   })
 
   it("keeps the committed surface and child alive during same-scope navigation", () => {
@@ -206,7 +222,6 @@ describe("community route", () => {
       targetHref: "/c/channels/s1/c2?msg=m2&threadView=full",
       pending: true,
       targetReady: true,
-      targetConversationSubtype: "forum",
     }).main).toEqual({
       kind: "server-route",
       href: "/c/channels/s1/c2?msg=m2&threadView=full",
@@ -218,6 +233,17 @@ describe("community route", () => {
       committedFrame: { ...normalizeCommunityHref("/c/me/dm1"), revision: 2 },
       targetHref: "/c/me/dm2", pending: true, targetReady: true,
     }).main).toEqual({ kind: "dm-route", href: "/c/me/dm2", dmId: "dm2" })
+  })
+
+  it("keeps a public invite outside the authenticated target consumers", () => {
+    expect(resolveCommunityCheckpointPlan({
+      committedFrame: { ...normalizeCommunityHref("/c/me/friends"), revision: 2 },
+      targetHref: "/c/invite/token?from=server", pending: true, targetReady: false,
+    })).toEqual({
+      mode: "cold-scope", surface: "detail", targetHref: "/c/invite/token?from=server",
+      rail: { kind: "keep" }, sidebar: { kind: "keep" },
+      main: { kind: "target-skeleton", href: "/c/invite/token?from=server" },
+    })
   })
 
   it("keeps committed A as the source after the router publishes B", () => {
@@ -235,8 +261,8 @@ describe("community route", () => {
       surface: "detail",
       targetHref: "/c/channels/s2/c2",
       rail: { kind: "target", view: "server", activeServerId: "s2" },
-      sidebar: { kind: "server-skeleton", serverId: "s2" },
-      main: { kind: "target-skeleton", href: "/c/channels/s2/c2" },
+      sidebar: { kind: "keep" },
+      main: { kind: "server-route", href: "/c/channels/s2/c2" },
     })
   })
 
@@ -327,7 +353,30 @@ describe("ordinary message resolution route", () => {
   })
   it("publishes a target checkpoint before a message leaf commits", () => {
     const committedFrame={...normalizeCommunityHref("/c/me/friends"),revision:1}
-    expect(resolveCommunityCheckpointPlan({committedFrame,targetHref:"/c/messages/message_1",pending:true,targetReady:false})).toMatchObject({main:{kind:"target-skeleton",href:"/c/messages/message_1"}})
-    expect(resolveCommunityCheckpointPlan({committedFrame,targetHref:"/c/unknown",pending:true,targetReady:false}).main.kind).toBe("keep")
+    expect(resolveCommunityCheckpointPlan({committedFrame,targetHref:"/c/messages/message_1",pending:true,targetReady:false})).toMatchObject({main:{kind:"module-route",module:"route-resolution",href:"/c/messages/message_1"}})
+    expect(resolveCommunityCheckpointPlan({committedFrame,targetHref:"/c/unknown",pending:true,targetReady:false}).main).toEqual({kind:"module-route",module:"friends",href:"/c/me/friends"})
+  })
+})
+
+
+describe("complete authenticated route consumer selection", () => {
+  it.each([
+    ["/c", "module-route", "route-resolution"],
+    ["/c/me", "module-route", "me-root"],
+    ["/c/me/friends?tab=new", "module-route", "friends"],
+    ["/c/me/bots?audit=bot", "module-route", "bots"],
+    ["/c/me/machines?reconnect=machine", "module-route", "machines"],
+    ["/c/me/dm", "dm-route", undefined],
+    ["/c/channels/target", "module-route", "server-landing"],
+    ["/c/channels/target/channel?msg=message", "server-route", undefined],
+    ["/c/channels/target/settings", "module-route", "server-landing"],
+    ["/c/messages/message", "module-route", "route-resolution"],
+    ["/c/onboarding-preview", "module-route", "route-resolution"],
+  ])("selects the same actual %s consumer without a directory-ready prerequisite", (href, kind, module) => {
+    const pending = resolveCommunityCheckpointPlan({ committedFrame: { ...normalizeCommunityHref("/c/channels/source/channel"), revision: 1 }, targetHref: href, pending: true, targetReady: false })
+    const committed = resolveCommunityCheckpointPlan({ committedFrame: { ...normalizeCommunityHref(href), revision: 2 }, targetHref: href, pending: false, targetReady: false })
+    expect(pending.main).toEqual({ kind, href, ...(module ? { module } : kind === "dm-route" ? { dmId: "dm" } : {}) })
+    expect(committed.main).toEqual(pending.main)
+    expect(pending.sidebar).toEqual({ kind: "keep" })
   })
 })

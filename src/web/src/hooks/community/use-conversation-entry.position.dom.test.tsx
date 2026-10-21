@@ -13,10 +13,10 @@ import { conversationEntryFixture } from "@/test/conversation-entry-fixtures"
 import { seedConversationEntry } from "@/test/conversation-entry-fixtures"
 import { act, fireEvent, render } from "@/test/react-dom-harness"
 import { installMessageScrollFixture, restoreMessageScrollFixture, resize } from "@/test/message-scroll-fixture"
-import { ingestReadStateSnapshot } from "@/lib/community-db/sync"
+import { captureCommunityLiveSnapshotToken, ingestReadStateSnapshot, publishAccountAttentionSnapshot } from "@/lib/community-db/sync"
 import { currentConversationReadState } from "@/lib/community/conversation-entry"
 import { disposeReadCoordinator, getLocalReadingPosition, getReadCoordinator } from "./read-coordinator"
-import { disposeAccountReadStateReconciliation } from "./community-ws/read-state-reconciliation"
+import { disposeAccountReadStateReconciliation, type AccountReadStateSnapshot } from "./community-ws/read-state-reconciliation"
 
 const navigationMock = vi.hoisted(() => ({ href: "/c/channels/s1/c1", replace: vi.fn() }))
 const load = vi.hoisted(() => vi.fn())
@@ -96,16 +96,37 @@ function entry(kind: Kind, channelId = "c1", ownTail = false) {
   return value
 }
 
-async function setup(kind: Kind, ownTail = false, strict = false) {
+async function setup(kind: Kind, ownTail = false, strict = false, options: {
+  cached?: ReturnType<typeof entry>
+  latestAttentionSeq?: number
+  refresh?: Promise<ReturnType<typeof entry>>
+  refreshWindow?: Promise<ReturnType<typeof entry>>
+  readPointer?: AccountReadStateSnapshot["readStates"][number]
+} = {}) {
   owner = await createCommunityQueryOwner()
-  await seedConversationEntry(owner.client, entry(kind, "c1", ownTail))
+  await seedConversationEntry(owner.client, options.cached ?? entry(kind, "c1", ownTail))
   await seedConversationEntry(owner.client, entry("channel", "c2"))
+  if (options.readPointer) ingestReadStateSnapshot(owner.registry, { revision: 2, readStates: [options.readPointer] })
+  if (options.latestAttentionSeq) publishAccountAttentionSnapshot(owner.client, {
+    snapshot: { scopes: [{ scopeId: "c1", channelId: "c1", serverId: "s1", ordinaryUnread: true,
+      lastUnreadSeq: options.latestAttentionSeq, lastAttentionSeq: null, attentionCount: 0 }],
+    items: [], limit: 100, truncated: false,
+    included: { servers: [], channels: [], dms: [], profiles: [], messages: [] } },
+    proof: { token: captureCommunityLiveSnapshotToken(owner.client), signal: undefined },
+  })
   let finishPut!: (value: unknown) => void
   let finishCanonical!: (value: unknown) => void
   const put = new Promise(resolve => { finishPut = resolve })
   const canonicalTransport = new Promise(resolve => { finishCanonical = resolve })
   releaseTransport = () => { finishPut({ changed: true, revision: 6, targetSeq: 42 }); finishCanonical({ revision: 6, readStates: [] }) }
   load.mockImplementation((url: string) => {
+    if (url === "/api/community/channels/c1/messages?entry=1" && options.refresh) return options.refresh
+    if (url === "/api/community/channels/c1/messages" && options.refreshWindow) return options.refreshWindow.then(value => ({
+      ...value.page, messages: value.messages,
+    }))
+    if (url.startsWith("/api/community/channels/c1/messages?since=") && options.refresh) return options.refresh.then(value => ({
+      ...value.page, messages: value.messages.filter(message => message.seq > 1),
+    }))
     if (url.endsWith("/read")) return put
     if (url === "/api/community/users/me/read-state") return canonicalTransport
     if (url === "/api/community/users/me/attention") return Promise.resolve({ scopes: [], items: [], limit: 100, truncated: false })
@@ -196,6 +217,74 @@ afterEach(async () => {
 })
 
 describe("conversation entry positioning through real reading owners", () => {
+  it.each([{ delayCanonical: false, previousTail: false }, { delayCanonical: true, previousTail: false }, { delayCanonical: false, previousTail: true }])("keeps a cached read tail visible until native data is complete, delayed canonical=$delayCanonical, previous tail=$previousTail", async ({ delayCanonical, previousTail }) => {
+    const fresh = entry("channel")
+    fresh.messages = fresh.messages.slice(0, 13)
+    fresh.channel.messageCount = 13
+    const readPointer = { channelId: "c1", lastReadMessageId: "m1", lastReadSeq: 1, lastReadAt: fresh.messages[0].createdAt }
+    fresh.readState = readPointer
+    fresh.selection = { reason: "read_pointer", anchorMessageId: "m1" }
+    fresh.readStateRevision = 2
+    fresh.page.latestSeq = 13
+    const cached = { ...fresh, channel: { ...fresh.channel, messageCount: 1 }, messages: fresh.messages.slice(0, 1), page: { ...fresh.page, latestSeq: 1 } }
+    if (previousTail) {
+      cached.readState = { channelId: "c1", lastReadMessageId: null, lastReadSeq: 0, lastReadAt: null }
+      cached.readStateRevision = 1
+      cached.selection = { reason: "tail", anchorMessageId: null }
+    }
+    let finishRefresh!: (value: typeof fresh) => void
+    const refresh = new Promise<typeof fresh>(resolve => { finishRefresh = resolve })
+    let finishWindow!: (value: typeof fresh) => void
+    const refreshWindow = new Promise<typeof fresh>(resolve => { finishWindow = resolve })
+    const view = await setup("channel", false, false, { cached, latestAttentionSeq: 13, refresh,
+      ...(previousTail ? { readPointer, refreshWindow } : {}),
+    })
+    const nativeWrite = owner.registry.collections.messages.utils.writeBatch.bind(owner.registry.collections.messages.utils)
+    const publications: Array<() => Promise<void>> = []
+    const delayed = delayCanonical ? vi.spyOn(owner.registry.collections.messages.utils, "writeBatch").mockImplementation(callback => (
+      new Promise<void>((resolve, reject) => { publications.push(() => nativeWrite(callback).then(resolve, reject)) })
+    )) : null
+    const publish = async () => {
+      delayed?.mockRestore()
+      await Promise.all(publications.splice(0).map(commit => commit()))
+    }
+    try {
+      expect(latest.feed.messages.map(message => message.id)).toEqual(["m1"])
+      expect(view.visible("m1")).toBe(true)
+      expect(latest.feed.isFetching).toBe(true)
+      const initialReadReady = view.root().querySelector("[data-message-list-content]")!.getAttribute("data-read-position-ready")
+      await act(async () => { finishRefresh(fresh); await vi.advanceTimersByTimeAsync(0) })
+      resize()
+      if (delayCanonical) {
+        expect({ latestSeq: latest.feed.latestSeq, messages: latest.feed.messages.map(message => message.id),
+          fetching: latest.feed.isFetching, readSnapshotFetching: latest.feed.readSnapshotFetching,
+          readReady: view.root().querySelector("[data-message-list-content]")!.getAttribute("data-read-position-ready"),
+        }).toEqual({ latestSeq: 13, messages: ["m1"], fetching: false, readSnapshotFetching: true, readReady: "false" })
+        await act(async () => { await publish(); await vi.advanceTimersByTimeAsync(0) })
+        resize()
+      }
+      if (previousTail) {
+        expect({ latestSeq: latest.feed.latestSeq, messages: latest.feed.messages.map(message => message.id),
+          fetching: latest.feed.isFetching, readSnapshotFetching: latest.feed.readSnapshotFetching,
+          readReady: view.root().querySelector("[data-message-list-content]")!.getAttribute("data-read-position-ready"),
+        }).toEqual({ latestSeq: 1, messages: ["m1"], fetching: false, readSnapshotFetching: true, readReady: "false" })
+        await act(async () => { finishWindow(fresh); await vi.advanceTimersByTimeAsync(0) })
+        resize()
+      }
+      expect(latest.feed.error).toBeNull()
+      expect(latest.feed.messages).toHaveLength(13)
+      const marker = view.root().querySelector("[data-new-divider]")!.getBoundingClientRect()
+      const viewport = view.root().getBoundingClientRect()
+      expect({ initialReadReady, newInViewport: marker.bottom > viewport.top && marker.top < viewport.bottom,
+        lastInViewport: view.visible("m13"), readReadyAfter: view.root().querySelector("[data-message-list-content]")!.getAttribute("data-read-position-ready"),
+      }).toEqual({ initialReadReady: "false", newInViewport: true, lastInViewport: false, readReadyAfter: "true" })
+      expect(latest.feed.readSnapshot?.lastReadSeq).toBe(1)
+      expect(load.mock.calls.some(([, options]) => options?.method === "PUT")).toBe(false)
+    } finally {
+      await act(async () => { finishRefresh(fresh); finishWindow(fresh); await publish(); await vi.advanceTimersByTimeAsync(0) })
+    }
+  })
+
   it.each([
     { kind: "channel", strict: false }, { kind: "post", strict: false },
     { kind: "thread", strict: false }, { kind: "channel", strict: true },

@@ -102,12 +102,6 @@ const [committedFrame, setCommittedFrame] = useAtom(useCreateAtom(initialCommitt
   const committedChannelId = committedModule.main.kind === "server-conversation"
     ? committedModule.main.leafId : null
   const committedChannel = useRouteChannelProjection(committedChannelId)
-  const mobileParentPath = committedModule.sidebar.kind === "server"
-    && committedChannel?.id === committedChannelId
-    && committedChannel.serverId === committedModule.sidebar.serverId
-    && committedChannel.parentChannelId
-    ? channelHref(committedModule.sidebar.serverId, committedChannel.parentChannelId)
-    : route.parentPath
   const target = navigation.pendingHref
     ? normalizeCommunityHref(navigation.pendingHref)
     : null
@@ -120,15 +114,16 @@ const [committedFrame, setCommittedFrame] = useAtom(useCreateAtom(initialCommitt
     : null
   const targetServer = useServerTreeProjection(targetServerId)
   const targetRouteChannel = useRouteChannelProjection(targetChannelId)
-  const targetChannel = targetServer?.categories
-    ?.flatMap((category) => category.channels)
-    .find((channel) => channel.id === targetChannelId)
-    ?? targetRouteChannel
-  const targetConversationSubtype = targetChannel?.type === "text"
-    || targetChannel?.type === "forum"
-    || targetChannel?.type === "thread"
-    ? targetChannel.type
-    : undefined
+  const displayedModule = targetModulePlan ?? committedModule
+  const displayedChannelId = targetModulePlan ? targetChannelId : committedChannelId
+  const displayedChannel = targetModulePlan ? targetRouteChannel : committedChannel
+  const displayedRoute = target ? resolveCommunityRoute(target.href) : route
+  const mobileParentPath = displayedModule.sidebar.kind === "server"
+    && displayedChannel?.id === displayedChannelId
+    && displayedChannel.serverId === displayedModule.sidebar.serverId
+    && displayedChannel.parentChannelId
+    ? channelHref(displayedModule.sidebar.serverId, displayedChannel.parentChannelId)
+    : displayedRoute.parentPath
   const targetReady = targetServerId
     ? queryClient.getQueryData(communityKeys.server(targetServerId)) !== undefined
       || targetServer !== undefined
@@ -137,10 +132,10 @@ const [committedFrame, setCommittedFrame] = useAtom(useCreateAtom(initialCommitt
       : false
   const checkpoint = resolveCommunityCheckpointPlan({
     committedFrame,
-    targetHref: navigation.pendingHref,
+    targetHref: navigation.pendingHref ?? (normalizeCommunityHref(navigation.publishedHref).leafKey !== committedFrame.leafKey
+      ? navigation.entryIntent?.href ?? navigation.publishedHref : navigation.publishedHref),
     pending: navigation.navigationPending,
     targetReady,
-    targetConversationSubtype,
   })
   const projectedView = checkpoint.rail.kind === "target"
     ? checkpoint.rail.view

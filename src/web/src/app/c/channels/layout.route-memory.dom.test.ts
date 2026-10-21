@@ -129,7 +129,6 @@ vi.mock("@/stores/community", async (importOriginal) => {
     ...actual,
     useCommunityStore: { getState: () => state },
     useCurrentChannelId: () => null,
-    useCurrentChannelMeta: () => null,
   }
 })
 vi.mock("@/contexts/community/current-user", () => ({
@@ -362,7 +361,7 @@ describe("ServerLayout deletion routing", () => {
     const actual = await vi.importActual<typeof import("@/lib/community/eject-server")>("@/lib/community/eject-server")
     actual.beginOwnerServerDelete(mocks.queryClient, "missing-server", mocks.routeToken)
     const renderer = render(createElement(ServerLayout))
-    expect(renderer.getByTestId("owner-delete-pending-frame")).toHaveAttribute("data-href", "/c/channels/missing-server/missing-channel")
+    expect(renderer.getByTestId("owner-delete-pending-frame")).toHaveAttribute("data-href", mocks.pendingHref.current)
     expect(mocks.channelRoute).not.toHaveBeenCalled()
     renderer.unmount()
   })

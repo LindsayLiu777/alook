@@ -80,7 +80,7 @@ function MobileChannelRoutes(props: ChannelRouteProps) {
   const previous = retained.current !== props.channelId ? retained.current : retained.previous
   const backgroundId = mobileSeen || breakpoint === "mobile" ? parentId ?? (identity === undefined ? previous : null) : null
   const ids = backgroundId && backgroundId !== props.channelId ? [backgroundId, props.channelId] : [props.channelId]
-  return <>{ids.map(id => <ConversationActivityContext key={!mobileSeen && breakpoint !== "mobile" || id === initialId ? "initial" : id} value={id === props.channelId && (!mobileSeen && breakpoint !== "mobile" || props.routeCommitted !== false)}>
+  return <>{ids.map(id => <ConversationActivityContext key={!mobileSeen && breakpoint !== "mobile" || id === initialId ? "initial" : id} value={id === props.channelId && props.routeCommitted !== false}>
     <ChannelRouteLayer {...props} channelId={id} foreground={id === props.channelId} backgroundVisible={id === parentId} routeCommitted={id === props.channelId ? props.routeCommitted : true} targetHref={id === props.channelId ? props.targetHref : channelHref(props.serverParam, id)} />
   </ConversationActivityContext>)}</>
 }
@@ -199,6 +199,7 @@ function ChannelTargetPane({ serverId, serverParam, channelId, searchParams, rou
   onOpenChild: (id: string) => void
 }) {
   const active = useConversationActivity()
+  const { navigation } = useCommunityRouteFrame()
   const router = useRouter()
   const accessEpoch = useCommunityWsStore((state) => state.accessEpoch)
   const currentAnchorMessageId = anchorMessageId
@@ -308,8 +309,8 @@ function ChannelTargetPane({ serverId, serverParam, channelId, searchParams, rou
     uiHandlers.cancelPendingNavigation?.()
     const params = new URLSearchParams(searchParams.toString())
     params.set(THREAD_VIEW_PARAM, "full")
-    router.push(`${channelHref(serverParam, channelId)}?${params.toString()}`, { scroll: false })
-  }, [channelId, router, searchParams, serverParam, uiHandlers])
+    navigation.push(`${channelHref(serverParam, channelId)}?${params.toString()}`, { scroll: false })
+  }, [channelId, navigation, searchParams, serverParam, uiHandlers])
 
   const openProfile = useCallback<OpenProfile>((name, e, discriminator, userId) => {
     uiHandlers.openProfile?.(name, e, discriminator, userId)
@@ -318,8 +319,8 @@ function ChannelTargetPane({ serverId, serverParam, channelId, searchParams, rou
   const channelReadReady =
     routeModel.routeLifecycle === "ready" &&
     routeModel.routeHydrated
-  const channelHydrated = !resolvingParent && (routeCommitted || resume) && channelReadReady &&
-    (!isForumPostChild || (!forumPostOpener.isLoading && !openerError))
+  const channelHydrated = !resolvingParent && channelReadReady &&
+    (!isForumPostChild || (Boolean(forumPostOpener.data) && !openerError))
   const clientReady = active && routeCommitted && channelHydrated && currentChannelId === channelId
   useNativeSystemNotificationConversationDismissal(currentUser.id, {
     kind: "server",
@@ -367,7 +368,7 @@ function ChannelTargetPane({ serverId, serverParam, channelId, searchParams, rou
               parentChannelId={currentChannelMeta?.parentChannelId ?? null}
               parentMessageId={currentChannelMeta?.parentMessageId ?? null}
               parentIsForum={isForumPostChild}
-              routeLifecycle={routeModel.routeLifecycle}
+              routeLifecycle={routeCommitted ? routeModel.routeLifecycle : "pending"}
               childCreatorId={currentChannelMeta?.creatorId}
               canRenameThread={canManageServer(myRole)}
               onNavigateParent={navigateParent}

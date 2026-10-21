@@ -12,8 +12,8 @@ import { useMessageWindowProjection } from "@/lib/community-db/projections"
 import { getCommunityRuntime } from "@/stores/community/runtime"
 import { useMessageOverlayIds } from "@/stores/community/message-stream"
 import { materializeMessageStream, type MessageScope } from "@/lib/community/message-stream"
-import { messageWindowOptions, type InitialMessageWindow } from "@/lib/community/message-window"
-import type { findConversationEntryWindow } from "@/lib/community/conversation-entry"
+import { messageWindowOptions, type InitialMessageWindow, type MessageWindowData } from "@/lib/community/message-window"
+import { knownConversationLatestSeq, type findConversationEntryWindow } from "@/lib/community/conversation-entry"
 import type { Msg } from "@/lib/community/models/message"
 import { messageReconcileOptions } from "./community-ws/reconnect-messages"
 
@@ -87,7 +87,9 @@ function useMessageSurface(channelId: string | null, opts: MessagesOpts | undefi
   const proof = entry.resource?.proof
   const viewKey = hashKey([channelId, serverId, anchorMessageId, tag, proof?.accountEpoch ?? -1, proof?.accessEpoch ?? -1,
     channelId ? proof?.channelScopes.get(channelId)?.generation ?? 0 : 0])
-  const present = useMemo(() => createStore<PresentSelection>({ attempt: 0, pending: false, window: null, version: 0, error: null }), [viewKey, entry.intent])
+  const present = useMemo(() => ({ viewKey, intent: entry.intent,
+    state: createStore<PresentSelection>({ attempt: 0, pending: false, window: null, version: 0, error: null }),
+  }), [viewKey, entry.intent]).state
   const selection = useSelector(present, (state) => state)
   const selectedWindow = entry.canRead ? selection.window ?? entry.window : null
   const enabled = !!channelId && !!selectedWindow && entry.canRead
@@ -102,7 +104,7 @@ function useMessageSurface(channelId: string | null, opts: MessagesOpts | undefi
   const options = messageWindowOptions(client, enabled ? channelId : "__none__", initial, tag, { observation })
   const queryKey = selectedWindow?.key ?? options.queryKey
   const query = useInfiniteQuery({ ...options, queryKey, enabled, subscribed: enabled })
-  useQuery({ ...messageReconcileOptions(client, { kind: serverId === null ? "dm" : "channel", scopeId: channelId ?? "__none__", serverId: serverId ?? undefined }, queryKey), enabled: false, subscribed: enabled })
+  const reconciliation = useQuery({ ...messageReconcileOptions(client, { kind: serverId === null ? "dm" : "channel", scopeId: channelId ?? "__none__", serverId: serverId ?? undefined }, queryKey), enabled: false, subscribed: enabled })
   const originalQuery = client.getQueryCache().find({ queryKey, exact: true })
   const owner = useMemo(() => ({ present, query: originalQuery, enabled }), [present, originalQuery, enabled])
   const committed = useRef<typeof owner | null>(null)
@@ -128,6 +130,11 @@ function useMessageSurface(channelId: string | null, opts: MessagesOpts | undefi
   const messages = useMemo(() => entry.canRead ? materializeMessageStream(canonicalBase, overlay, canonicalById).filter((message) => messageMatchesTag(message, tag)) : [],
     [canonicalBase, canonicalById, overlay, entry.canRead, tag])
   const latestSeq = Math.max(0, ...(query.data?.pages.map((page) => page.latestSeq ?? 0) ?? []))
+  const landingWindow = entry.resource ? client.getQueryData<MessageWindowData>(entry.resource.windowKey) : undefined
+  const landingLatestSeq = Math.max(0, ...(landingWindow?.pages.map(page => page.latestSeq ?? 0) ?? []))
+  const readSnapshotFetching = entry.isPending || ids.some(id => !canonicalById.has(id))
+    || !anchorMessageId && !tag && (landingLatestSeq > latestSeq && (!reconciliation.isError || reconciliation.isFetching)
+      || entry.isFetching && !!channelId && knownConversationLatestSeq(client, channelId) > latestSeq)
   const pages = query.data?.pages ?? []
   const oldest = pages.at(-1)
   const newest = pages[0]
@@ -191,8 +198,8 @@ function useMessageSurface(channelId: string | null, opts: MessagesOpts | undefi
     fetchOlder, fetchNewer, jumpToPresent, presentVersion: selection.version,
     anchorReconciled: !!selectedWindow,
     navigationBlocked: !entry.canRead,
-    readSnapshot: entry.snapshot, readSnapshotFetching: entry.isPending,
-    initialPositionKnown: !!selectedWindow && entry.snapshot !== null && !loading,
+    readSnapshot: entry.snapshot, readSnapshotFetching,
+    initialPositionKnown: !!selectedWindow && entry.snapshot !== null && !loading && !readSnapshotFetching,
     initialPositionMessageId: entry.initialPositionMessageId, positionEntry: entry.intent,
     retryInitialLoad, retryingInitialLoad: entry.isFetching || query.isFetching,
     entryCanRead: entry.canRead, entryDenied: entry.denied, entryAnchorMissing: entry.anchorMissing,
