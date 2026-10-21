@@ -1,0 +1,174 @@
+.section {
+  padding-block: clamp(72px, 9vw, 128px);
+  background: var(--landing-bg);
+  color: var(--landing-text);
+  scroll-margin-top: 72px;
+}
+
+.container {
+  width: calc(100% - var(--landing-page-gutter) * 2);
+  max-width: var(--landing-content-max);
+  margin-inline: auto;
+}
+
+.intro {
+  margin-bottom: 56px;
+}
+
+.intro h2 {
+  max-width: 760px;
+  font-family: var(--font-crt);
+  font-size: clamp(3rem, 4.6vw, 5rem);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.intro p {
+  margin-top: 16px;
+  color: var(--landing-text-muted);
+  line-height: 1.6;
+}
+
+.wall {
+  display: grid;
+  min-width: 0;
+  gap: 32px;
+  overflow: hidden;
+  contain: paint;
+}
+
+.lane {
+  overflow-x: hidden;
+}
+
+.track {
+  display: flex;
+  width: max-content;
+  animation: drift 100s linear infinite;
+}
+
+.lane:nth-child(2) .track {
+  animation-direction: reverse;
+  animation-duration: 110s;
+}
+
+.messages {
+  display: flex;
+  gap: 40px;
+  margin: 0;
+  padding: 8px 40px 8px 8px;
+  list-style: none;
+}
+
+.messages > li {
+  width: 360px;
+  flex-shrink: 0;
+}
+
+.message {
+  display: flex;
+  gap: 8px;
+  min-height: 44px;
+  margin: -8px;
+  padding: 8px;
+  border-radius: 4px;
+  color: var(--landing-text);
+  text-decoration: none;
+}
+
+.message:hover,
+.message:focus-visible {
+  background: var(--landing-surface);
+}
+
+.message:focus-visible {
+  outline: 2px solid var(--landing-text);
+  outline-offset: 4px;
+}
+
+.avatar {
+  align-self: flex-start;
+}
+
+.avatarFallback {
+  background: var(--landing-surface);
+  color: var(--landing-text-muted);
+}
+
+.body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.author [data-message-author-line] {
+  flex: 0 1 auto;
+}
+
+.sourceIcon {
+  flex-shrink: 0;
+  color: var(--landing-text-muted);
+}
+
+.handle {
+  color: var(--landing-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.body blockquote {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.375;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+@keyframes drift {
+  to { transform: translateX(-50%); }
+}
+
+.wall:hover .track,
+.wall:active .track {
+  animation-play-state: paused;
+}
+
+.wall:has(:focus-visible) .track {
+  animation: none;
+}
+
+.wall:has(:focus-visible) .lane {
+  overflow-x: auto;
+}
+
+.wall:has(:focus-visible) .duplicate {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .intro { margin-bottom: 32px; }
+  .wall { gap: 24px; }
+  .messages { gap: 24px; padding-right: 24px; }
+  .messages > li { width: min(360px, calc(100vw - 48px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track { animation: none; }
+  .lane { overflow-x: auto; }
+  .duplicate { display: none; }
+}

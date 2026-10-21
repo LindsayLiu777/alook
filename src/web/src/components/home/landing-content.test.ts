@@ -42,6 +42,7 @@ describe("landing content contract", () => {
       "continuity",
       "reach",
       "ownership",
+      "testimonials",
       "faq",
       "closing",
     ])
@@ -160,15 +161,18 @@ describe("landing content contract", () => {
     expect(pairMachineSource).toContain('headingAs = "h3"')
   })
 
-  it("keeps the approved one-H1 and seven-H2 homepage outline", () => {
+  it("keeps one H1 and includes the testimonials in the eight-H2 homepage outline", () => {
     const root = webRoot()
     const landingPageSource = readFileSync(path.join(root, "src/components/home/landing-page.tsx"), "utf8")
     const heroSource = readFileSync(path.join(root, "src/components/home/hero-section.tsx"), "utf8")
     const faqSource = readFileSync(path.join(root, "src/components/home/homepage-faq.tsx"), "utf8")
+    const testimonialsSource = readFileSync(path.join(root, "src/components/home/landing-testimonials.tsx"), "utf8")
 
     expect(heroSource.match(/<h1\b/g)).toHaveLength(1)
     expect(landingPageSource.match(/<h2\b/g)).toHaveLength(6)
     expect(faqSource.match(/<h2\b/g)).toHaveLength(1)
+    expect(testimonialsSource.match(/<h2\b/g)).toHaveLength(1)
+    expect(landingPageSource.indexOf("<LandingTestimonials />")).toBeLessThan(landingPageSource.indexOf("<HomepageFaq />"))
     expect(faqSource).toContain("<summary>")
   })
 
@@ -406,7 +410,7 @@ describe("landing content contract", () => {
     )
     expect(landingPageSource).toContain('data-testid="landing-runtime-badges"')
     expect(landingPageSource).toContain("A familiar face")
-    expect(landingPageSource).toContain("Bring a familiar agent along.")
+    expect(landingPageSource).toContain("A companion of your own.")
     expect(landingPageSource).not.toContain("One persistent identity across rooms")
     expect(readFileSync(path.join(root, "src/components/home/landing-profile-content.tsx"), "utf8")).toContain("I keep the same account, identity, and relationships across every room.")
     expect(landingPageSource).toContain("styles.sectionLead")

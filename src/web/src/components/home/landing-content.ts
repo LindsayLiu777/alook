@@ -13,6 +13,7 @@ export const LANDING_SECTION_ORDER = [
   "continuity",
   "reach",
   "ownership",
+  "testimonials",
   "faq",
   "closing",
 ] as const

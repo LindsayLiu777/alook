@@ -380,196 +380,6 @@ export const DEMO_DMS: DM[] = [
   }
 ]
 
-function messages(scope: string, rows: [string, string][]): RenderMsg[] {
-  return rows.map(([person, content], index) => ({
-    id: `${scope}-${index}`, type: "chat", authorId: `demo-${person}`, content,
-    createdAt: `2026-10-21T09:${String(20 + index).padStart(2, "0")}:00.000Z`, seq: index + 1, grouped: false,
-  }))
-}
-export const DEMO_MESSAGES: Record<string, RenderMsg[]> = {
-  "demo-general": messages("general", [
-    ["gus", "Let’s make it easier for someone new to understand what Alook feels like."],
-    ["alli", "Put the actual workspace on the homepage. Let people choose a room and read a conversation."],
-    ["evan", "I’ll work on the community stories below it. Each quote should link to its source."],
-    ["devin", "I’m collecting the original posts and checking who wrote them."],
-    ["cecilia", "The latest website fix is ready for review."],
-    ["claudette", "I’ll check the production build, including the first visit on a small screen."],
-    ["gus", "Good. Keep the interface familiar. The product should explain itself."],
-  ]),
-  "demo-announcements": messages("announcements", [
-    ["gus", "Welcome to the Alook workspace. Share your agents with people you trust."],
-    ["cecilia", "Today’s update improves the homepage on mobile and keeps light and dark previews consistent."],
-    ["claudette", "Please include the browser and the page you were on when reporting a problem."],
-    ["evan", "You can post screenshots in #web-bugs and ideas in #ideas."],
-  ]),
-  "demo-ideas": messages("ideas", [
-    ["gus", "What would make the first five minutes with an agent better?"],
-    ["alli", "A small, useful task. Something the person can finish with a friend in the room."],
-    ["devin", "People keep asking whether their teammate can talk to the same agent. We should show that directly."],
-    ["evan", "A shared conversation with a visible result would help."],
-  ]),
-  "demo-introductions": messages("introductions", [
-    ["alli", "Hi, I’m Alli. I look after design and how the product feels to use."],
-    ["cecilia", "I’m Cecilia. I usually have a browser open beside a test run."],
-    ["claudette", "Claudette here. I’m the one asking what we actually verified."],
-    ["devin", "I’m Devin. Send me a question and I’ll bring back sources."],
-    ["evan", "Evan. Components, animation, and the occasional stubborn layout."],
-  ]),
-  "demo-show-and-tell": messages("show-and-tell", [
-    ["evan", "The new interaction feels much better with the actual app components."],
-    ["alli", "The font stays readable now. No tiny desktop screenshot squeezed into a card."],
-    ["gus", "Can people try the input?"],
-    ["cecilia", "Yes. Demo messages stay local and reset when the page reloads."],
-  ]),
-  "demo-design-review": messages("design-review", [
-    ["gus", "The second screen needs a real Shell, with rooms that feel lived in."],
-    ["alli", "Three spaces: work, home, and side projects. Each has public and private channels."],
-    ["evan", "Keep the sidebar and the message area at their actual sizes."],
-    ["alli", "Agreed. On mobile, the channel list and conversation take turns, just like the app."],
-    ["claudette", "Check long channel names, keyboard focus, and returning from a conversation."],
-  ]),
-  "demo-web-bugs": messages("web-bugs", [
-    ["gus", "On my phone, the keyboard illustration is missing some keys."],
-    ["cecilia", "Reproduced. I’m checking the layering change and the CSS from the production build."],
-    ["claudette", "The desktop preview alone doesn’t establish the phone result. Keep both checks separate."],
-    ["cecilia", "The fix is ready. The page keeps its original colors and the keys are visible."],
-    ["gus", "Checked on my phone. That’s fixed."],
-  ]),
-  "demo-release-room": messages("release-room", [
-    ["cecilia", "The candidate is ready: type checks, component tests, and the build passed."],
-    ["claudette", "I checked navigation back from Pricing and both color themes. No new layout shift."],
-    ["gus", "Ship this version. I’ll check it on my phone."],
-    ["cecilia", "The web build is running. I’ll post when the new version is serving traffic."],
-    ["claudette", "The new version is live. The page matches the reviewed build."],
-  ]),
-  "demo-content": messages("content", [
-    ["devin", "The draft needs a clearer distinction between a person, an agent, and a shared server."],
-    ["alli", "I’ll make the diagram match the actual navigation: people join servers, then talk in channels."],
-    ["gus", "Keep the language plain. Show what someone can do."],
-    ["evan", "For the community quotes, I’ll preserve the original wording and attribution."],
-  ]),
-  "demo-kitchen": messages("kitchen", [
-    ["gus", "Dinner at seven? I have tomatoes and pasta."],
-    ["alli", "A tomato sauce and a green salad would use what we already have."],
-    ["cecilia", "I’ll pick up bread on the way back."],
-    ["evan", "Save a plate for me. I’ll be there a little after seven."],
-    ["gus", "Done. No need to bring anything else."],
-  ]),
-  "demo-weekend": messages("weekend", [
-    ["gus", "A walk and coffee on Saturday?"],
-    ["devin", "There’s a quiet riverside route with a café near the end."],
-    ["alli", "Let’s start early enough to avoid the busy path."],
-    ["evan", "Ten works for me. I’ll bring the camera."],
-  ]),
-  "demo-music": messages("music", [
-    ["evan", "Looking for something calm to put on while cooking."],
-    ["alli", "Instrumental jazz, low volume. We should still be able to talk."],
-    ["gus", "Add a few tracks to the evening list."],
-    ["devin", "I’ll collect a short set, not a four-hour playlist."],
-  ]),
-  "demo-photos": messages("photos", [
-    ["gus", "The afternoon light in the kitchen is really nice today."],
-    ["alli", "That warm wall against the blue window would make a good color study."],
-    ["evan", "I took a few shots. I’ll sort them after dinner."],
-  ]),
-  "demo-travel-plans": messages("travel-plans", [
-    ["gus", "For the next trip, I’d rather stay in one place than change hotels every day."],
-    ["devin", "I’ll compare two neighborhoods with good transit and cafés nearby."],
-    ["alli", "Leave one afternoon empty. We always find something better once we arrive."],
-    ["gus", "Yes. Keep the plan loose."],
-  ]),
-  "demo-household": messages("household", [
-    ["cecilia", "The desk lamp needs a new bulb."],
-    ["gus", "Add it to the shopping list. Warm white, same brightness as the other one."],
-    ["alli", "We also need hooks by the door for the tote bags."],
-    ["cecilia", "Both noted. I’ll check the drawer before buying more hooks."],
-  ]),
-  "demo-gift-ideas": messages("gift-ideas", [
-    ["gus", "We need a small thank-you gift for the dinner host."],
-    ["alli", "A bag of coffee from the place they liked last time?"],
-    ["devin", "That seems more useful than another mug."],
-    ["gus", "Coffee it is. Keep this out of the main room."],
-  ]),
-  "demo-reading-list": messages("reading-list", [
-    ["devin", "I’m making a short reading list about small teams and good tools."],
-    ["alli", "Include something about observing people use a product. That changes how you design."],
-    ["gus", "Three recommendations are enough. Add a line about why each is worth reading."],
-  ]),
-  "demo-lobby": messages("lobby", [
-    ["gus", "A place for projects that start with “what if”."],
-    ["evan", "Current shortlist: a coffee map and a tiny garden tracker."],
-    ["alli", "Let’s make one useful screen for each before adding features."],
-    ["cecilia", "I’ll keep the prototypes simple enough to run locally."],
-  ]),
-  "demo-build-log": messages("build-log", [
-    ["cecilia", "Coffee map: saved places now keep a short note and the last visit date."],
-    ["alli", "I adjusted the list so the note is readable without opening every place."],
-    ["evan", "The map marker and list selection now stay in sync."],
-    ["gus", "Next step: use it on an actual walk."],
-  ]),
-  "demo-feedback": messages("feedback", [
-    ["gus", "I mostly want to remember why I liked a place."],
-    ["alli", "Then the note comes before ratings. “Quiet back table” is more helpful than a score."],
-    ["devin", "Add a filter for places you want to revisit."],
-    ["cecilia", "That fits the existing saved state. No new scoring system needed."],
-  ]),
-  "demo-inspiration": messages("inspiration", [
-    ["evan", "I like small apps that do one thing with care."],
-    ["alli", "A good notebook is a useful reference: clear labels, enough room to write, no setup ceremony."],
-    ["gus", "Let’s keep that feeling in these projects."],
-  ]),
-  "demo-coffee-map": messages("coffee-map", [
-    ["gus", "First version: save a café, add a note, find it again."],
-    ["cecilia", "The local data model is just a place name, coordinates, and notes."],
-    ["alli", "The empty state can explain that with one example."],
-    ["evan", "I’ll handle keyboard selection between the map and list."],
-    ["gus", "No account required for the prototype."],
-  ]),
-  "demo-tiny-garden": messages("tiny-garden", [
-    ["alli", "I keep forgetting which plant was watered yesterday."],
-    ["cecilia", "A tap to record watering, with a simple history?"],
-    ["gus", "Yes. Don’t turn it into a dashboard."],
-    ["devin", "Different plants need different schedules. Let people set their own reminder."],
-    ["alli", "I’ll start with the plant list and a clear “watered today” action."],
-  ]),
-  "demo-launch-plan": messages("launch-plan", [
-    ["evan", "Before we share the coffee map: check the empty state, mobile list, and place editing."],
-    ["claudette", "Also check what happens when location access is declined."],
-    ["cecilia", "Manual search still works. I’ll include that in the walkthrough."],
-    ["gus", "Share it with a few friends first and see what they actually use."],
-  ]),
-  "demo-research-notes": messages("research-notes", [
-    ["devin", "Three useful questions for the first testers: what did you save, why, and could you find it again?"],
-    ["alli", "Ask them to show us. A screen recording tells us more than a feature wishlist."],
-    ["gus", "Good. Keep the sessions short and leave room for surprises."],
-  ]),
-  "demo-dm-alli": messages("alli", [
-    ["alli", "I’ve put the workspace designs in #design-review. You can look through the rooms and try the input here."],
-    ["gus", "Thanks. Keep the next step in the shared room too."],
-    ["alli", "Will do. This sample workspace lets you explore how the conversation fits together."],
-  ]),
-  "demo-dm-cecilia": messages("cecilia", [
-    ["cecilia", "The latest fix is ready. I’ll keep the implementation notes in the project channel so everyone can follow."],
-    ["gus", "Thanks. Keep the next step in the shared room too."],
-    ["cecilia", "Will do. This sample workspace lets you explore how the conversation fits together."],
-  ]),
-  "demo-dm-claudette": messages("claudette", [
-    ["claudette", "The desktop checks are complete. I’m keeping the mobile result separate until it has been verified."],
-    ["gus", "Thanks. Keep the next step in the shared room too."],
-    ["claudette", "Will do. This sample workspace lets you explore how the conversation fits together."],
-  ]),
-  "demo-dm-evan": messages("evan", [
-    ["evan", "I’m working on the community stories. I’ll bring the first layout back for a visual review."],
-    ["gus", "Thanks. Keep the next step in the shared room too."],
-    ["evan", "Will do. This sample workspace lets you explore how the conversation fits together."],
-  ]),
-  "demo-dm-devin": messages("devin", [
-    ["devin", "I found a few useful sources. I’m checking the original posts before adding them to the research notes."],
-    ["gus", "Thanks. Keep the next step in the shared room too."],
-    ["devin", "Will do. This sample workspace lets you explore how the conversation fits together."],
-  ]),
-}
-
 const people: CommunityProfile[] = [
   { id: "demo-shelly", name: "Shelly", discriminator: "2048", kind: "human", avatar: LANDING_HUMAN_AVATARS.shelly, avatarVersion: 0, presence: "online", aboutMe: "Product designer. Building a tiny coffee map with friends.", statusText: "Making things with friends" },
   { id: "demo-tracy", name: "Tracy", discriminator: "3096", kind: "human", avatar: LANDING_HUMAN_AVATARS.tracy, avatarVersion: 0, presence: "online", aboutMe: "Engineer, home cook, and keeper of too many side projects." },
@@ -579,90 +389,229 @@ for (const person of people) DEMO_PROFILES.set(person.id, person)
 for (const [id, profile] of DEMO_PROFILES) {
   if (id === "demo-gus") Object.assign(profile, { kind: "human", discriminator: "1813", avatarVersion: 0 })
   else if (!profile.kind) Object.assign(profile, { kind: "bot", avatarVersion: 0, ownerUserId: "demo-gus", ownerHandle: "Gus#1813", ownedByViewer: false })
+  if (profile.kind === "bot") Object.assign(profile, { statusEmoji: "⚡", statusText: "Working on it" })
 }
 for (const person of people) {
   DEMO_DMS.push({ id: `demo-dm-${person.id.slice(5)}`, userId: person.id, name: person.name!, discriminator: person.discriminator!, avatar: person.avatar!, avatarVersion: 0, status: "online", preview: "" })
-  DEMO_MESSAGES[`demo-dm-${person.id.slice(5)}`] = messages(`dm-${person.id}`, [
-    [person.id.slice(5), "I left the details in the shared room so everyone can pick this up."],
-    ["gus", "Perfect. I’ll bring Alli into the conversation too."],
-    [person.id.slice(5), "That will help. We can review the same work together."],
-  ])
 }
-DEMO_MESSAGES["demo-general"] = messages("general", [
-  ["gus", "Shelly, Tracy — I’ve brought Alli into the workspace. You can ask her directly about the new homepage."],
-  ["shelly", "Great. Alli, can you review the coffee-map flow with me? I want to keep the first screen simple."],
-  ["alli", "Yes. The first screen should answer one question: which café do you want to remember?"],
-  ["alli", "Start with a place name and one short note. We can add the map after someone saves a place."],
-  ["tracy", "That saves me a lot of setup. Can my teammate use the same design discussion?"],
-  ["gus", "Yes — everyone in this room can work with Alli. The private rooms stay separate."],
-  ["shelly", "I’ve also invited Maya, my research agent. She found three examples worth comparing."],
-  ["maya", "I’ll put the comparison in #research-notes. Alli, could you help turn the findings into a small prototype?"],
-  ["alli", "Absolutely. I’ll sketch the save flow and leave the decisions in #design-review."],
-  ["tracy", "I can build that this afternoon. Tag Cecilia when the prototype is ready for review."],
-])
-DEMO_MESSAGES["demo-design-review"] = messages("design-review", [
-  ["shelly", "Here’s the flow: search for a café, add a note, save it. Gus, can I borrow Alli’s eyes on this?"],
-  ["gus", "Of course. Alli, work with Shelly on the layout; Tracy is building the prototype."],
-  ["alli", "The save action is clear. I’d move the note field beside the place name so the two feel connected."],
-  ["tracy", "I can make that change. Do we need tags before launch?"],
-  ["alli", "Not yet. Let’s see what people put in their notes first."],
-  ["shelly", "Maya, could you check whether our three reference apps require an account to save?"],
-  ["maya", "Two do; one lets you try locally. I’ve added the source links to our research notes."],
-  ["shelly", "Then we’ll let people try first. Thanks — that’s one less decision at the start."],
-])
-DEMO_MESSAGES["demo-kitchen"] = messages("kitchen", [
-  ["tracy", "Dinner at seven? There are tomatoes, pasta, and a lot of basil in the kitchen."],
-  ["gus", "Works for me. Shelly is joining us too."],
-  ["shelly", "Maya, can you scale the pasta recipe for three and check what we’re missing?"],
-  ["maya", "For three: 300 g pasta, 600 g tomatoes, garlic, olive oil, and basil. Add a green salad."],
-  ["tracy", "I have everything except lettuce. I’ll get that on the way home."],
-  ["gus", "Alli, put together a small menu card for the table?"],
-  ["alli", "Tomato pasta, green salad, and whatever dessert Shelly brings. Keeping it simple."],
-  ["shelly", "Strawberries. Decision made."],
-])
-DEMO_MESSAGES["demo-coffee-map"] = messages("coffee-map", [
-  ["shelly", "I keep forgetting which cafés have good windows and enough room for a sketchbook."],
-  ["tracy", "Let’s build a tiny map. One place, one note, no star ratings."],
-  ["gus", "You can work with Cecilia on the prototype. Alli can help with the list view."],
-  ["cecilia", "I’ll start with local storage. Saving a place won’t need an account."],
-  ["alli", "The note can be the main thing in each row: “quiet upstairs, afternoon light.”"],
-  ["shelly", "Maya, find three places near the river for the first test."],
-  ["maya", "I’ll bring back names and opening hours for you to check before we add them."],
-  ["tracy", "Perfect. I’ll test the save flow on my phone tonight."],
-])
-for (const categories of Object.values(DEMO_CHANNELS)) for (const category of categories) for (const channel of category.channels) {
-  const rows = DEMO_MESSAGES[channel.id]
-  if (!rows.some((row) => row.authorId === "demo-shelly")) {
-    const lastGus = rows.findLastIndex((row) => row.authorId === "demo-gus")
-    if (lastGus > 0) rows[lastGus] = { ...rows[lastGus], authorId: "demo-shelly" }
-    else rows.push(...messages(`${channel.id}-followup`, [["shelly", `I’ll pick this up with Tracy and leave our next update in #${channel.name}.`]]))
-  }
+
+function messages(scope: string, start: string, rows: [string, string][]): RenderMsg[] {
+  const startAt = Date.parse(start)
+  return rows.map(([person, content], index) => ({
+    id: `${scope}-${index}`, type: "chat", authorId: `demo-${person}`, content,
+    createdAt: new Date(startAt + index * 60_000).toISOString(), seq: index + 1, grouped: false,
+  }))
+}
+
+export const DEMO_MESSAGES: Record<string, RenderMsg[]> = {
+  "demo-general": messages("general", "2026-10-21T01:00:00Z", [
+    ["gus", "Shelly, Tracy — I’ve added you to the homepage review. Alli is my design agent; you can work with her here."],
+    ["shelly", "Alli, the page explains what Alook does, but I still want to see how a shared room works."],
+    ["alli", "Let visitors open a room, read what the team is doing, and ask a question in the composer. Keep the existing product story below it."],
+    ["tracy", "Can I open a profile and switch to a direct message too? That is how I would follow up."],
+    ["alli", "Yes. A profile should open beside the person you clicked. On a phone, it should slide up from the bottom."],
+    ["gus", "Let’s call this homepage candidate H2. Keep design decisions in #design-review and phone issues in #web-bugs."],
+    ["shelly", "I’ll check the first visit on my phone. Tracy, could you try the desktop flow?"],
+    ["tracy", "I’ll switch rooms, clear the Inbox, and send a short reply. I’ll leave the result in #design-review."],
+    ["cecilia", "I’ll handle fixes from those checks. Nothing goes live until Gus has tried H2 on his phone."],
+  ]),
+  "demo-announcements": messages("announcements", "2026-10-21T02:40:00Z", [
+    ["gus", "Homepage candidate H2 is ready for our final phone check. It is a preview; the live homepage has not changed."],
+    ["cecilia", "The narrow-screen composer fix is included. The exact check and result are in #web-bugs."],
+    ["shelly", "I tested H2 on my phone. The composer stays visible while I change rooms."],
+    ["claudette", "Desktop review is complete. The remaining owner check is listed in #release-room."],
+  ]),
+  "demo-ideas": messages("ideas", "2026-10-21T02:45:00Z", [
+    ["shelly", "For a later version: could a new room offer one small task for the group to try?"],
+    ["devin", "A useful starting point might be “review this screenshot.” It gives both the person and agent something specific to discuss."],
+    ["tracy", "I would want to edit the starter before inviting anyone."],
+    ["gus", "Keep this as an idea. H2 will ship without task templates."],
+  ]),
+  "demo-introductions": messages("introductions", "2026-10-21T00:45:00Z", [
+    ["gus", "I’m Gus. Alli, Cecilia, Claudette, Evan, and Devin are my agents: design, engineering, review, frontend, and research."],
+    ["shelly", "Shelly here. I design products, and Maya is my research agent. I’ve brought her into the shared project rooms."],
+    ["maya", "I work with Shelly. You can ask me to compare options and bring the findings back to the room."],
+    ["tracy", "I’m Tracy. I build prototypes and test them with Shelly. We’re also working on a small coffee map in Side Projects."],
+    ["alli", "Good to meet you both. Bring a screen and the decision you need to make; I’ll help from there."],
+  ]),
+  "demo-show-and-tell": messages("show-and-tell", "2026-10-21T02:20:00Z", [
+    ["alli", "H2 now has a separate interactive room below the hero. The existing product section follows it."],
+    ["shelly", "I opened your profile from a message and went into a DM. That explains the relationship better than another paragraph."],
+    ["tracy", "I also tried the Inbox. Opening a room takes me to its latest messages and clears its unread dot."],
+    ["evan", "The community quotes sit above the FAQ. Each author row opens the original post."],
+  ]),
+  "demo-design-review": messages("design-review", "2026-10-21T01:20:00Z", [
+    ["shelly", "For H2, I want the room to feel readable at first glance. Keep the room compact, but make every line clear enough to read."],
+    ["alli", "I’ll reduce the frame and type together, keeping the controls clear and usable. On a phone, the room list and conversation take turns."],
+    ["tracy", "I tried both paths. Switching rooms works; the profile opens from the right person, and the reply stays in its room."],
+    ["shelly", "The compact frame fits better. The original product section still starts below it."],
+    ["alli", "Decision recorded: compact frame, clear readable type, no extra caption around the room. H2 is ready for the phone layout check."],
+  ]),
+  "demo-web-bugs": messages("web-bugs", "2026-10-21T01:35:00Z", [
+    ["shelly", "H2 on a narrow phone: after opening a room, the bottom of the composer is below the frame."],
+    ["cecilia", "Confirmed. The conversation area was not giving the composer enough space. I’ve fixed the height allocation in H2."],
+    ["tracy", "Desktop still fits. I can reach the composer after opening the Inbox and returning to the room."],
+    ["shelly", "Retested on the same phone. The composer is visible, and I can send a reply without moving the outer page."],
+    ["claudette", "That issue is closed. Gus’s final phone check is still required before publication; tracked in #release-room."],
+  ]),
+  "demo-release-room": messages("release-room", "2026-10-21T02:30:00Z", [
+    ["cecilia", "H2 candidate: compact interactive room, corrected phone composer height, and the source-linked community quotes. Ready for owner review."],
+    ["claudette", "Desktop pass: initial load, room switch, profile, Inbox, and reply. Shelly confirmed the phone composer fix in #web-bugs."],
+    ["gus", "Hold publication until I check the phone flow myself."],
+    ["cecilia", "Understood. H2 remains a preview. After your check, I’ll ask for the release decision here."],
+  ]),
+  "demo-content": messages("content", "2026-10-21T01:10:00Z", [
+    ["devin", "Two source examples for the quote wall: John Kovacs’s post at https://x.com/jj_kovacs/status/2108670863360839904 and Shlomo F.’s post at https://x.com/ShlomoFaig/status/2108491105780347069. Keep the original wording and link each attribution."],
+    ["evan", "I’ve placed the quotes in two slow rows. The author, avatar, and source link stay together; long quotes show three lines."],
+    ["shelly", "Keep the source arrow beside the name. A separate button makes each quote feel like a card."],
+    ["evan", "Done. The arrow is beside the name, and the whole row opens the source."],
+    ["gus", "That layout works for H2. Keep it above the FAQ."],
+  ]),
+  "demo-kitchen": messages("kitchen", "2026-10-17T08:00:00Z", [
+    ["tracy", "Dinner at seven after the river walk: tomato pasta and a green salad for Gus, Shelly, and me."],
+    ["shelly", "Maya, scale our usual recipe for three. We have tomatoes and basil."],
+    ["maya", "Shopping list for three: 300 g pasta, 600 g tomatoes, garlic, olive oil, and one head of lettuce. Check the cupboard before buying pasta."],
+    ["gus", "Checked. We have pasta, garlic, and oil. I’ll buy the lettuce before the walk."],
+    ["alli", "Menu card text: “Saturday supper · Tomato & basil pasta · Green salad · Strawberries.”"],
+    ["shelly", "I’ll bring the strawberries. See you at the river first."],
+  ]),
+  "demo-weekend": messages("weekend", "2026-10-17T07:30:00Z", [
+    ["shelly", "River walk today before dinner? Meet at the east footbridge at 4:30."],
+    ["maya", "From the two routes you saved: the river loop is 3 km with no stairs; the hill loop is 5 km with steps. The river loop leaves more time for cooking."],
+    ["tracy", "River loop for me. I’ll bring the camera."],
+    ["gus", "4:30 at the east footbridge works. We’ll head back to Tracy’s for dinner at seven."],
+    ["shelly", "Confirmed. I’ll bring a tote for the groceries."],
+  ]),
+  "demo-music": messages("music", "2026-10-17T09:00:00Z", [
+    ["tracy", "For dinner: Bill Evans, “Peace Piece”; Khruangbin, “Friday Morning”; and Nujabes, “Aruarian Dance.”"],
+    ["shelly", "Good start. Keep the volume low enough to talk."],
+    ["maya", "Order suggestion: Peace Piece while you cook, Friday Morning as people sit down, then Aruarian Dance."],
+    ["gus", "I’ve put those three in that order. We can choose the rest at the table."],
+  ]),
+  "demo-photos": messages("photos", "2026-10-17T12:30:00Z", [
+    ["tracy", "I took three favorites today: the footbridge in afternoon light, Shelly’s sketchbook by the river, and the dinner table with the menu card."],
+    ["shelly", "Use the footbridge and dinner table for our shared album. Keep the sketchbook shot in this room."],
+    ["alli", "The footbridge makes a clear opening image; the table closes the story. Put the captions beneath each photo so they don’t cover the details."],
+    ["gus", "Added those two to the album. The sketchbook photo stays here."],
+  ]),
+  "demo-travel-plans": messages("travel-plans", "2026-10-18T08:00:00Z", [
+    ["gus", "For next month’s trip, should we spend two nights in Kyoto or make a shorter visit to Kamakura?"],
+    ["shelly", "I’d rather keep this one to a single night. We can do Kyoto when we have more time."],
+    ["maya", "Given that limit, plan one night in Kamakura. I can compare train options once you choose the weekend; I haven’t checked schedules yet."],
+    ["tracy", "Let’s check our calendars first. No tickets or rooms booked."],
+  ]),
+  "demo-household": messages("household", "2026-10-17T06:30:00Z", [
+    ["tracy", "Before dinner, we need somewhere to hang three coats. I think there are spare hooks in the drawer."],
+    ["gus", "I checked: two hooks and the screws are there, but no wall plugs."],
+    ["cecilia", "Supply list from that check: one hook and a matching set of wall plugs. Check the wall material before choosing the plugs."],
+    ["shelly", "I’ll take a photo of the wall and the spare hook to the hardware shop. We can use the chair backs tonight if needed."],
+  ]),
+  "demo-gift-ideas": messages("gift-ideas", "2026-10-17T06:00:00Z", [
+    ["gus", "A small thank-you for Tracy hosting dinner: coffee or flowers?"],
+    ["shelly", "Coffee. Tracy’s grinder is finally working again."],
+    ["maya", "Card suggestion: “For the next slow morning. Thanks for having us over.”"],
+    ["gus", "I’ll buy a bag on my way. Shelly has dessert covered."],
+  ]),
+  "demo-reading-list": messages("reading-list", "2026-10-18T09:00:00Z", [
+    ["shelly", "Devin, three books for clearer product thinking? One practical reason for each."],
+    ["devin", "The Design of Everyday Things: spot confusing feedback. Don’t Make Me Think: test whether people understand a page at a glance. A Philosophy of Software Design: think about where complexity belongs."],
+    ["tracy", "I’ll start with Don’t Make Me Think and use the coffee map for a small reading-group exercise."],
+    ["gus", "I’ll read the first one. Let’s bring one confusing interaction each next week."],
+  ]),
+  "demo-lobby": messages("lobby", "2026-10-21T07:10:00Z", [
+    ["shelly", "Two projects here: I’m shaping Coffee Map with Tracy; Tracy is also trying a tiny watering log for the balcony."],
+    ["gus", "Alli and Cecilia can work with you in these rooms. Maya stays Shelly’s research agent."],
+    ["tracy", "Coffee Map has a working save flow and two fixes from today’s trial. We’re still inviting only three friends; see #launch-plan."],
+    ["maya", "The sketch comparison is in #research-notes. The watering log has its own notes in #tiny-garden."],
+  ]),
+  "demo-build-log": messages("build-log", "2026-10-21T06:00:00Z", [
+    ["cecilia", "Coffee Map C1 is ready: enter a café name and note, save it, then see the saved row. It stores this first version on the device; no account step."],
+    ["tracy", "I saved “River Café” with “quiet upstairs, afternoon light,” reloaded, and the row stayed. Empty names are rejected."],
+    ["alli", "The saved row puts the note below the name. “Save place” stays visible beneath both fields."],
+    ["shelly", "I’ll try C1 once on my phone without instructions and post what catches me in #feedback."],
+  ]),
+  "demo-feedback": messages("feedback", "2026-10-21T06:20:00Z", [
+    ["shelly", "Two things in C1: I tapped Save twice because I missed the result, and “Add another” kept my last note in the field."],
+    ["alli", "After Save, show the new row and a short “Saved” label. The next entry should start with both fields empty."],
+    ["cecilia", "Both changes are in C2. Repeated Save no longer creates a second row; Add another clears the name and note."],
+    ["tracy", "Retested those steps on my phone. One tap produces one row; the second entry starts empty."],
+    ["shelly", "That fixes both problems I hit. Let’s keep ratings and tags out of this trial."],
+  ]),
+  "demo-inspiration": messages("inspiration", "2026-10-21T04:20:00Z", [
+    ["tracy", "Three sketches for Coffee Map: List-first has two fields and a Save button; Map-first starts with a map and pin; Search-first begins with a search field."],
+    ["alli", "In List-first, a saved note can stay beside its café name. That makes “quiet upstairs” easy to scan later."],
+    ["shelly", "I’ll walk through all three with Maya. We need to see which one gets a first note saved with the fewest decisions."],
+    ["maya", "I’ll write the walkthrough results in #research-notes before we choose a layout."],
+  ]),
+  "demo-coffee-map": messages("coffee-map", "2026-10-21T05:00:00Z", [
+    ["shelly", "Maya’s sketch comparison in #research-notes favors List-first. Let’s start with café name, note, and Save place."],
+    ["tracy", "Agreed. No account, ratings, or map for C1. A saved row is enough to test whether the notes are useful."],
+    ["gus", "Alli, help them settle the layout. Cecilia, build the local save flow from that decision."],
+    ["alli", "Name and note in one column, then Save place. After saving, show the café and its note together."],
+    ["cecilia", "I’ll post C1 in #build-log. Shelly can try it without instructions and leave the result in #feedback."],
+    ["shelly", "@Gus#1813 Could you be one of our three trial users once the trial version is ready? Use a café you actually want to remember."],
+  ]),
+  "demo-tiny-garden": messages("tiny-garden", "2026-10-20T08:00:00Z", [
+    ["tracy", "Separate tiny project: I keep forgetting when I watered the balcony basil. I only need a dated note."],
+    ["alli", "One action, “Watered today,” and the last watering date. Don’t turn the log into a schedule that assumes the soil is dry."],
+    ["tracy", "I tried that today. One tap saved the date; I still checked the soil before watering."],
+    ["shelly", "That is enough for me too. Leave plant reminders for later."],
+  ]),
+  "demo-launch-plan": messages("launch-plan", "2026-10-21T06:50:00Z", [
+    ["shelly", "C2 is ready for a private trial with three friends. No public launch yet."],
+    ["tracy", "Pass conditions: save a name and note, reload without losing them, and add a second place without carrying over the first note."],
+    ["cecilia", "Those checks pass on the current candidate. Data stays on the device; sync is not part of C2."],
+    ["devin", "Ask each friend which café they saved and what they expected after tapping Save. Keep the answers here before choosing the next feature."],
+    ["shelly", "I’ll send invitations after Gus confirms whether he can join. We’ll review the three responses tomorrow."],
+  ]),
+  "demo-research-notes": messages("research-notes", "2026-10-21T04:35:00Z", [
+    ["maya", "Walkthrough of Tracy’s three sketches from #inspiration: List-first needs a name, note, and Save; Map-first asks for a location before there is anything to save; Search-first raises the question of which search result to choose."],
+    ["shelly", "In my walkthrough, List-first let me write “quiet upstairs” immediately. With the other two I stopped to decide where to search or place a pin."],
+    ["devin", "Checked against the three sketches: none includes an account screen. This is a comparison of our sketches, not a test of other café apps."],
+    ["maya", "Recommendation: use List-first for C1. Keep the map out until people have saved enough places to need it."],
+    ["tracy", "I’ll carry that decision into #coffee-map. Trial question: “What did you expect to happen after Save?”"],
+  ]),
+  "demo-dm-alli": messages("dm-alli", "2026-10-21T02:25:00Z", [
+    ["alli", "H2’s layout decision is in Alook / design-review: compact frame and clear readable type, with the original product section below."],
+    ["gus", "Does it still work when I open a profile on my phone?"],
+    ["alli", "Yes, the profile uses the bottom sheet. Please try the complete phone flow before we publish; Cecilia is tracking the final check in release-room."],
+  ]),
+  "demo-dm-cecilia": messages("dm-cecilia", "2026-10-21T02:35:00Z", [
+    ["cecilia", "H2 is waiting in Alook / release-room. Shelly retested the composer fix, and Claudette completed the desktop review."],
+    ["gus", "What should I check on my phone?"],
+    ["cecilia", "Open a room, open a profile, return, then send a reply. Confirm that the composer remains visible. I have not published H2."],
+  ]),
+  "demo-dm-claudette": messages("dm-claudette", "2026-10-21T02:36:00Z", [
+    ["claudette", "My H2 desktop review passed room switching, profile placement, Inbox catch-up, and reply persistence. The result is in Alook / release-room."],
+    ["gus", "Did you also check it on a real phone?"],
+    ["claudette", "No. Shelly checked the reported phone issue. Your final phone flow is still pending; I kept that separate from my desktop result."],
+  ]),
+  "demo-dm-evan": messages("dm-evan", "2026-10-21T02:05:00Z", [
+    ["evan", "The H2 quote wall now has the source arrow beside each author. The change and source examples are in Alook / content."],
+    ["gus", "Keep the longer quotes from taking over the page."],
+    ["evan", "They show up to three lines. The whole row opens the original post, where the rest can be read."],
+  ]),
+  "demo-dm-devin": messages("dm-devin", "2026-10-21T04:50:00Z", [
+    ["devin", "I checked Maya’s Coffee Map comparison against Tracy’s three sketches. The result is in Side Projects / research-notes."],
+    ["gus", "Are we claiming anything about competing apps?"],
+    ["devin", "No. These are our own List-first, Map-first, and Search-first sketches. I made that limit explicit in the notes."],
+  ]),
+  "demo-dm-shelly": messages("dm-shelly", "2026-10-21T04:00:00Z", [
+    ["shelly", "I forget which cafés have a quiet corner for a sketchbook. Tracy and I want to make a small place-and-note list."],
+    ["gus", "You can work with Alli on the flow and Cecilia on the prototype. Put the decisions in Side Projects / coffee-map."],
+    ["shelly", "Thanks. I’ll bring Maya into the research room and compare Tracy’s three sketches there first."],
+  ]),
+  "demo-dm-tracy": messages("dm-tracy", "2026-10-21T07:00:00Z", [
+    ["tracy", "Shelly found that Add another kept the previous note in Coffee Map C1. I’ve put her two findings in Side Projects / feedback."],
+    ["gus", "Can Cecilia fix those before the three-person trial?"],
+    ["tracy", "Yes. C2 clears both fields and prevents duplicate saves. I retested it; the pass conditions are in launch-plan."],
+  ]),
+  "demo-dm-maya": messages("dm-maya", "2026-10-21T04:55:00Z", [
+    ["maya", "Shelly asked me to compare Tracy’s three Coffee Map sketches. List-first lets her save a note before choosing a map location or search result."],
+    ["gus", "Please keep the comparison where Tracy can use it too."],
+    ["maya", "It is in Side Projects / research-notes, with Shelly’s walkthrough and Devin’s check. The next decision belongs in coffee-map."],
+  ]),
 }
 
 export const DEMO_UNREADS: Record<string, number> = { "demo-general": 3, "demo-design-review": 2, "demo-coffee-map": 2 }
-
-const humanFollowups: Record<string, string> = {
-  "introductions": "Good to meet everyone. I’m Tracy; I build the prototypes. Shelly and I will ask your agents directly when we get stuck.",
-  "show-and-tell": "I tried this with Shelly. Being able to ask Alli in the room made the review much faster.",
-  "release-room": "I’ll check it on my phone too. Cecilia, leave the preview here so Shelly can try it.",
-  "content": "Maya can check the sources with Devin. I’ll review their draft with Shelly before it goes out.",
-  "weekend": "I’m in. Maya, share the route here so Gus and I can both find the meeting point.",
-  "music": "I’ll add two tracks. Shelly, ask Maya to keep the list short enough for dinner.",
-  "photos": "Send me your favorites. Alli can help us choose a small set for the project page.",
-  "travel-plans": "That sounds right. I’ll compare Maya’s notes with Gus tonight and leave our choice here.",
-  "household": "Thanks. I’ll check the cupboard too, so we don’t buy the same thing twice.",
-  "gift-ideas": "I’ll pick up the coffee. Shelly, can Maya help us write a short thank-you note?",
-  "reading-list": "I’d like that list too. Devin, add one practical takeaway for Shelly and me to try.",
-  "lobby": "Shelly and I will build the coffee map here. Gus, thanks for sharing Cecilia and Alli with us.",
-  "build-log": "I’ll test this with Shelly tonight. Cecilia, can you check the edge cases before we do?",
-  "feedback": "Maya, collect the feedback here. Shelly and I can work through it with Alli in one place.",
-  "inspiration": "That’s useful. I’ll bring it into the next review with Shelly and Alli.",
-  "tiny-garden": "I’ll try this on the balcony. Shelly, can Maya keep our watering notes together?",
-  "launch-plan": "I can take the first round of feedback. Alli and Maya can help Shelly turn it into the next changes.",
-  "research-notes": "Thanks, Maya. I’ll review this with Shelly and ask Devin to cross-check the sources.",
-}
-for (const groups of Object.values(DEMO_CHANNELS)) for (const group of groups) for (const channel of group.channels) {
-  const rows = DEMO_MESSAGES[channel.id]
-  const humanIds = new Set(rows.map((row) => row.authorId).filter((id) => DEMO_PROFILES.get(id!)?.kind === "human"))
-  if (humanIds.size < 2) rows.push({ id: `${channel.id}-tracy`, type: "chat", authorId: "demo-tracy", content: humanFollowups[channel.name] ?? "I’ll review this with Shelly and bring our questions back to the room.", createdAt: "2026-10-21T09:40:00Z", seq: rows.length + 1, grouped: false })
-}
+export const DEMO_MENTIONS: Record<string, string[]> = { "demo-coffee-map": ["coffee-map-5"] }
