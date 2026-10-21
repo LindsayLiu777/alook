@@ -966,12 +966,8 @@ body.driver-active .community-ws-reconnect-overlay * {
   overflow: visible;
 }
 
-.hero-artwork[data-static-paper] .tw-body-front {
-  transform-style: preserve-3d;
-}
-
-.hero-artwork[data-static-paper] .tw-paper-track {
-  transform: translateX(-50%) translateZ(-1px);
+.tw-body > .tw-paper-track {
+  transform: translateX(-50%) translateZ(79px);
 }
 
 /* Back face */

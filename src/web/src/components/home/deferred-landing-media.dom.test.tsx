@@ -4,8 +4,8 @@ import { act, fireEvent, render, screen } from "@/test/react-dom-harness"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { DeferredLandingMedia } from "./deferred-landing-media"
 
-const props = { poster: "/landing/posters/server.webp", width: 1120, height: 660 }
-afterEach(() => vi.unstubAllGlobals())
+const props = { poster: "/landing/posters/server.webp", darkPoster: "/landing/posters/server-dark.webp", width: 1120, height: 660 }
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe("deferred landing media", () => {
   it("keeps a dimensioned static image in server HTML without invoking the chunk", () => {
@@ -16,9 +16,10 @@ describe("deferred landing media", () => {
     expect(html).toContain('width="1120"')
     expect(html).toContain('height="660"')
     expect(html).toContain('loading="lazy"')
+    expect(html).toContain(props.darkPoster)
   })
 
-  it("loads only on intersection and preserves the poster while the chunk is pending", async () => {
+  it.each([0, 1])("loads only on intersection after poster %s decodes and preserves it while pending", async (posterIndex) => {
     let observeCallback: IntersectionObserverCallback = () => undefined
     const disconnect = vi.fn()
     vi.stubGlobal("IntersectionObserver", class {
@@ -39,7 +40,7 @@ describe("deferred landing media", () => {
     await act(async () => observeCallback([{ isIntersecting: true }] as IntersectionObserverEntry[], {} as IntersectionObserver))
     expect(load).not.toHaveBeenCalled()
     let finishDecode!: () => void
-    const image = container.querySelector("img")!
+    const image = container.querySelectorAll("img")[posterIndex]!
     Object.defineProperty(image, "decode", { value: () => new Promise<void>((done) => { finishDecode = done }) })
     await act(async () => fireEvent.load(image))
     expect(load).not.toHaveBeenCalled()
@@ -53,6 +54,26 @@ describe("deferred landing media", () => {
     expect((container.firstElementChild as HTMLElement).style.aspectRatio).toBe("1120 / 660")
     unmount()
     expect(disconnect.mock.calls.length).toBeGreaterThan(1)
+  })
+
+  it("activates on intersection when only the dark poster completed before hydration", async () => {
+    vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockImplementation(function (this: HTMLImageElement) {
+      return this.getAttribute("src") === props.darkPoster
+    })
+    let observeCallback: IntersectionObserverCallback = () => undefined
+    vi.stubGlobal("IntersectionObserver", class {
+      constructor(callback: IntersectionObserverCallback) { observeCallback = callback }
+      observe = vi.fn()
+      disconnect = vi.fn()
+    })
+    const load = vi.fn(async () => ({ default: () => <span>Cached dark demo</span> }))
+    const Demo = lazy(load)
+    render(<DeferredLandingMedia {...props}><Demo /></DeferredLandingMedia>)
+    await act(async () => { await Promise.resolve() })
+    expect(load).not.toHaveBeenCalled()
+    await act(async () => observeCallback([{ isIntersecting: true }] as IntersectionObserverEntry[], {} as IntersectionObserver))
+    expect(load).toHaveBeenCalledTimes(1)
+    expect(screen.getByText("Cached dark demo")).toBeTruthy()
   })
 
   it("activates without IntersectionObserver and keeps a poster on chunk failure", async () => {

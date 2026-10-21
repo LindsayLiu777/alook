@@ -1,4 +1,4 @@
-.page {
+.page:global(.landing) {
   --landing-content-max: 1320px;
   --landing-page-gutter: clamp(24px, 5vw, 72px);
   --landing-bg: #f4f9e9;

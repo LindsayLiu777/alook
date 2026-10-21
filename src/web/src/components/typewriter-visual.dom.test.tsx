@@ -23,6 +23,14 @@ describe("typewriter paper", () => {
     expect(container.querySelector("pre")?.textContent).toBe(TYPEWRITER_CITY_ART);
   });
 
+  it.each([false, true])("keeps keyboard on a flat front with animated paper=%s", (animateEntrance) => {
+    const { container } = render(<TypewriterVisual animateEntrance={animateEntrance} />);
+    const front = container.querySelector(".tw-body-front")!;
+    const track = container.querySelector(".tw-paper-track")!;
+    expect(front.querySelectorAll(".tw-key")).toHaveLength(26);
+    expect(track.parentElement).toBe(animateEntrance ? front : container.querySelector(".tw-body"));
+  });
+
   it("shows the city without a switch control or consuming Enter", () => {
     const { container } = render(<TypewriterVisual />);
     expect(screen.getByRole("img", { name: /Alook sculpture/ })).toBeTruthy();

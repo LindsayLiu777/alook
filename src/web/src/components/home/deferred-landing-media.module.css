@@ -1,0 +1,21 @@
+.lightPoster,
+.darkPoster {
+  width: 100%;
+  height: auto;
+}
+
+.lightPoster {
+  display: block;
+}
+
+.darkPoster {
+  display: none;
+}
+
+:global(.dark) .lightPoster {
+  display: none;
+}
+
+:global(.dark) .darkPoster {
+  display: block;
+}

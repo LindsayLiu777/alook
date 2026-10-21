@@ -75,6 +75,14 @@ export function TypewriterVisual({
     );
   }, { scope: containerRef });
 
+  const paperTrack = (
+    <div className="tw-paper-track">
+      <div className={`tw-paper${paper == null ? " tw-paper-city" : ""}`} style={animateEntrance ? undefined : { opacity: 1 }}>
+        {paper ?? <TypewriterCityArt />}
+      </div>
+    </div>
+  );
+
   return (
     <div
       ref={containerRef}
@@ -94,12 +102,9 @@ export function TypewriterVisual({
             <div className="tw-body-top" />
             <div className="tw-body-bottom" />
 
+            {!animateEntrance && paperTrack}
             <div className="tw-body-front">
-              <div className="tw-paper-track">
-                <div className={`tw-paper${paper == null ? " tw-paper-city" : ""}`} style={animateEntrance ? undefined : { opacity: 1 }}>
-                  {paper ?? <TypewriterCityArt />}
-                </div>
-              </div>
+              {animateEntrance && paperTrack}
               <div className="tw-roller-assembly">
                 <div className="tw-knob tw-knob-left" />
                 <div className="tw-roller" />
