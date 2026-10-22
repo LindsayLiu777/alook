@@ -273,3 +273,5 @@ Words are part of the interface. They should sound like the brand: **warm, sharp
 - Mobile landing bot profiles retain the Bot log companion but hide its footer row to give the notebook body more space. Desktop retains the full notebook.
 - Bot logs use local fixed Thoughts and Marks. Preview Thoughts are static. Scroll-to-tail affects only the notebook scroller, never the surrounding landing page.
 - Production loading has no QA hold switch or test-only URL controls.
+
+- The mobile landing Bot log retains 8px of visible paper below its content: 16px content padding minus its 8px paper inset.
