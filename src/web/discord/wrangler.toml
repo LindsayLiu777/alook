@@ -1,6 +1,8 @@
 name = "alook-discord"
 main = "../src/lib/discord-redirect.ts"
 compatibility_date = "2026-05-13"
+workers_dev = true
+preview_urls = false
 
 [[routes]]
 pattern = "discord.alook.ai"
