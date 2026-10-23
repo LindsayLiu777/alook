@@ -47,14 +47,14 @@ describe("blogTopics", () => {
     expect(registrySlugs).toEqual(publishedSlugs);
   });
 
-  it("covers all 34 published slugs exactly once", () => {
+  it("covers all 35 published slugs exactly once", () => {
     const orderedSlugs = blogTopics.map((topic) =>
       topic.entries.map((entry) => entry.slug)
     );
     const slugs = orderedSlugs.flat();
 
-    expect(slugs).toHaveLength(34);
-    expect(new Set(slugs).size).toBe(34);
+    expect(slugs).toHaveLength(35);
+    expect(new Set(slugs).size).toBe(35);
     expect(orderedSlugs).toEqual([
       [
         "ai-agent-vs-chatbot",
