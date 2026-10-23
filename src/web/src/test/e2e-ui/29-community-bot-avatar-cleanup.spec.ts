@@ -136,6 +136,7 @@ test("real bot avatars become unreadable after single delete and authenticated m
     await route.continue()
   })
   await alice.page.reload({ waitUntil: "commit" })
+  await expect(alice.page.getByText(botName, { exact: true })).toHaveCount(1)
   await expect(alice.page.getByText(botName, { exact: true })).toBeVisible()
   const avatar = alice.page.locator(`img[src="${upload.url}"]`)
   await expect(avatar).toHaveAttribute("data-remote-image-state", "pending")
@@ -154,6 +155,7 @@ test("real bot avatars become unreadable after single delete and authenticated m
   failAvatar = false
   const requestsBeforeReload = avatarRequests
   await alice.page.reload({ waitUntil: "commit" })
+  await expect(alice.page.getByText(botName, { exact: true })).toHaveCount(1)
   await expect(alice.page.getByText(botName, { exact: true })).toBeVisible()
   await expect.poll(() => avatarRequests).toBeGreaterThan(requestsBeforeReload)
   await expect(avatar).toHaveCount(1)
@@ -198,6 +200,7 @@ test("real bot avatars become unreadable after single delete and authenticated m
   const cascadeUpload = await uploadAvatar(alice.page, cascadeBotId)
   expect(cascadeUpload.status).toBe(200)
   await alice.page.reload()
+  await expect(alice.page.getByText(cascadeBotName, { exact: true })).toHaveCount(1)
   await expect(alice.page.getByText(cascadeBotName, { exact: true })).toBeVisible()
   expect(await alice.page.evaluate(async (path) => (
     await fetch(`${path}?before-cascade=${crypto.randomUUID()}`, { cache: "no-store" })

@@ -1,3 +1,5 @@
+import { readServerRailSnapshot } from "./server-rail";
+import { sortServerRailRows } from "../../../community-server-rail";
 import { eq, and, asc, desc, isNotNull, isNull, inArray, count, ne, or, sql } from "drizzle-orm";
 import type { SQLWrapper } from "drizzle-orm";
 import {
@@ -15,6 +17,8 @@ import { canSeePrivateChannel, visibilityIsDmParticipant, ROLES } from "../../..
 import { formatHandle } from "../../../lib/discriminator";
 import { user } from "../../schema";
 import { chunk, D1_MAX_IN_PARAMS, maxInParams, maxRowsPerInsert } from "../_chunk";
+import { jsonTextSet } from "../_json-set";
+import type { ChannelCategoryMove } from "../../../community-channel-order";
 
 // Column selection shared by every read query.
 const CHANNEL_COLUMNS = {
@@ -565,18 +569,26 @@ export async function listChildChannelsByParentMessageIds(
 
 export async function reorderChannels(
   db: Database,
-  _serverId: string,
-  channelIds: string[]
+  serverId: string,
+  channelIds: string[],
+  move?: ChannelCategoryMove,
 ) {
   const statements = channelIds.map((id, index) =>
     db
       .update(communityChannel)
-      .set({ position: index })
-      .where(eq(communityChannel.id, id))
+      .set({ position: index, ...(move?.channelId === id ? { categoryId: move.categoryId } : {}) })
+      .where(and(eq(communityChannel.serverId, serverId), eq(communityChannel.id, id), isNull(communityChannel.parentChannelId)))
   );
   if (statements.length > 0) {
     await db.batch(statements as [typeof statements[0], ...typeof statements]);
   }
+}
+
+export async function getServerRootChannelsByIds(db: Database, serverId: string, channelIds: string[]) {
+  return db.select(CHANNEL_COLUMNS).from(communityChannel).where(and(
+    eq(communityChannel.serverId, serverId), isNull(communityChannel.parentChannelId),
+    inArray(communityChannel.id, jsonTextSet(db, channelIds)),
+  ));
 }
 
 export async function getChannelsByIds(db: Database, channelIds: string[]) {
@@ -1083,7 +1095,7 @@ export async function listChannelRefDirectoryForUser(db: Database, userId: strin
           eq(communityServerMember.userId, userId)
         )
       )
-      .orderBy(asc(communityServerMember.railOrder), asc(communityServer.id)),
+      .orderBy(asc(communityServerMember.joinedAt), asc(communityServer.id)),
     db
       .select({
         serverId: communityChannel.serverId,
@@ -1120,7 +1132,6 @@ export async function listChannelRefDirectoryForUser(db: Database, userId: strin
         )
       )
       .orderBy(
-        asc(communityServerMember.railOrder),
         asc(communityServerMember.serverId),
         sql`${communityChannel.categoryId} IS NULL`,
         asc(communityCategory.position),
@@ -1129,7 +1140,7 @@ export async function listChannelRefDirectoryForUser(db: Database, userId: strin
         asc(communityChannel.id)
       ),
   ]);
-  return groupChannelRefDirectoryRows(servers, channels);
+  return groupChannelRefDirectoryRows(sortServerRailRows(await readServerRailSnapshot(db, userId), servers), channels);
 }
 
 // Shared visibility computation for the nested-membership model. Assembles the

@@ -1,4 +1,5 @@
 "use client"
+import { readCommunityServerRailServers } from "@/lib/community-db/server-rail"
 import { useAtom, useCreateAtom, useSelector } from "@tanstack/react-store";
 import { getCommunityRuntime } from "@/stores/community/runtime"
 
@@ -62,7 +63,6 @@ import {
   useCreateChannel,
   useRenameChannel,
   useDeleteChannel,
-  useMoveChannel,
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
@@ -204,7 +204,6 @@ function ServerSidebar({ serverId, href, routeCommitted }: { serverId: string; h
   const createChannelMut = useCreateChannel()
   const renameChannelMut = useRenameChannel()
   const deleteChannelMut = useDeleteChannel()
-  const moveChannelMut = useMoveChannel()
   const createCategoryMut = useCreateCategory()
   const updateCategoryMut = useUpdateCategory()
   const deleteCategoryMut = useDeleteCategory()
@@ -217,8 +216,7 @@ function ServerSidebar({ serverId, href, routeCommitted }: { serverId: string; h
       clearLastChannel(deletedServerId)
       if (!needsNavigation || !ownerDeleteRouteToken) return
       void (async () => {
-        const allowed = new Set([...communityDb!.collections.serverMemberships.values()].filter((row) => row.viewer && row.userId === currentUser.id).map((row) => row.serverId))
-        const survivor = [...communityDb!.collections.servers.values()].filter((server) => allowed.has(server.id)).sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).find((server) => server.id !== deletedServerId)
+        const survivor = readCommunityServerRailServers(communityDb!).find((server) => server.id !== deletedServerId)
         const destination = survivor
           ? await serverDestination(survivor.id)
           : "/c/me"
@@ -441,22 +439,16 @@ function ServerSidebar({ serverId, href, routeCommitted }: { serverId: string; h
   const onReorderCategoriesInSidebar = useCallback((categoryIds: string[]) => {
     reorderCategoriesMut.mutate({ serverId, categoryIds }, { onError: (e) => toastApiError(e, "Failed to save category order") })
   }, [reorderCategoriesMut, serverId])
-  const onReorderChannelsInSidebar = useCallback((channelIds: string[]) => {
-    reorderChannelsMut.mutate({ serverId, channelIds }, { onError: (e) => toastApiError(e, "Failed to save channel order") })
+  const onReorderChannelsInSidebar = useCallback((channelIds: string[], move?: Parameters<typeof reorderChannelsMut.mutate>[0]["move"]) => {
+    reorderChannelsMut.mutate({ serverId, channelIds, move }, { onError: (e) => toastApiError(e, "Failed to save channel order") })
   }, [reorderChannelsMut, serverId])
-  const onMoveChannelInSidebar = useCallback((channelId: string, categoryId: string | null) => {
-    moveChannelMut.mutate({ serverId, channelId, categoryId }, { onError: (e) => toastApiError(e, "Failed to move channel") })
-  }, [moveChannelMut, serverId])
-  const onBlockedMove = useCallback(() => {
-    toast("Can't move a channel between public and private categories")
-  }, [])
-
   const channelProps = useMemo(() => ({
     serverName: currentServer?.name ?? "",
     serverIcon: currentServer?.icon ?? null,
     official: currentServer?.official ?? false,
     activeChannel: currentChannelMeta?.parentChannelId ?? currentChannelId ?? "",
     isAdmin,
+    reorderPending: reorderCategoriesMut.isPending || reorderChannelsMut.isPending,
     currentUserId: currentUser.id,
     setActiveChannel,
     forumThreadsByParent,
@@ -473,12 +465,10 @@ function ServerSidebar({ serverId, href, routeCommitted }: { serverId: string; h
     onUpdateCategory: sidebarHintOnly ? undefined : onUpdateCategoryInSidebar,
     onReorderCategories: sidebarHintOnly ? undefined : onReorderCategoriesInSidebar,
     onReorderChannels: sidebarHintOnly ? undefined : onReorderChannelsInSidebar,
-    onMoveChannel: sidebarHintOnly ? undefined : onMoveChannelInSidebar,
-    onBlockedMove,
     serverId,
     invitePopoverOpen,
     onInvitePopoverOpenChange: sidebarHintOnly ? undefined : setInvitePopoverOpen,
-  }), [currentServer?.name, currentServer?.icon, currentServer?.official, currentChannelMeta?.parentChannelId, currentChannelId, isAdmin, currentUser.id, setActiveChannel, forumThreadsByParent, activeForumThreadId, setActiveForumThread, sidebarHintOnly, onSidebarOpenSettings, onBlockedCreate, mutedChannels, onCreateChannelInSidebar, onCreateCategoryInSidebar, onRenameChannel, onDeleteChannelInSidebar, onDeleteCategoryInSidebar, onUpdateCategoryInSidebar, onReorderCategoriesInSidebar, onReorderChannelsInSidebar, onMoveChannelInSidebar, onBlockedMove, serverId, invitePopoverOpen, setInvitePopoverOpen])
+  }), [reorderCategoriesMut.isPending, reorderChannelsMut.isPending, currentServer?.name, currentServer?.icon, currentServer?.official, currentChannelMeta?.parentChannelId, currentChannelId, isAdmin, currentUser.id, setActiveChannel, forumThreadsByParent, activeForumThreadId, setActiveForumThread, sidebarHintOnly, onSidebarOpenSettings, onBlockedCreate, mutedChannels, onCreateChannelInSidebar, onCreateCategoryInSidebar, onRenameChannel, onDeleteChannelInSidebar, onDeleteCategoryInSidebar, onUpdateCategoryInSidebar, onReorderCategoriesInSidebar, onReorderChannelsInSidebar, serverId, invitePopoverOpen, setInvitePopoverOpen])
 
   const openProfile = (name: string, e: React.MouseEvent, discriminator?: string, userId?: string) => {
     // Delegate to the shell's registered openProfile via the community store.

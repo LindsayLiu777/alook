@@ -7,14 +7,14 @@ import { useAtom, useCreateAtom } from "@tanstack/react-store";
 
 import { BellOff, Loader2, Pencil, Trash2, Users } from "lucide-react"
 import { EntityIcon } from "../entity-icon"
-import { useSortable } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
+import { useChannelDndItem } from "./channel-dnd"
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { DropLine } from "../drop-line"
 import { tid } from "@/lib/community/testids"
 import type { Channel } from "@/lib/community/models/navigation"
 import { selectUnreadPresentation } from "@/hooks/community/unread-presentation"
+import { ChannelUnreadIndicator } from "./channel-unread-indicator"
 
 export function hasChannelMenu(h: { onEdit?: () => void; onManageMembers?: () => void; onDelete?: () => void }) {
   return !!(h.onEdit || h.onManageMembers || h.onDelete)
@@ -51,10 +51,10 @@ export function SortableChannel({ ch, href, active, onClick, onEdit, onDelete, o
   canReorder?: boolean
 }) {
   const [confirmingDelete, setConfirmingDelete] = useAtom(useCreateAtom(false))
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver, activeIndex, index, active: dragActive } = useSortable({ id: ch.id, disabled: !canReorder })
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 10 : undefined }
-  const showLine = isOver && !isDragging
-  const lineSide: "top" | "bottom" = activeIndex !== -1 && activeIndex < index ? "bottom" : "top"
+  const { setNodeRef, isDragging, isOver, placement, lineSide, dragActive, suppressClick, resumeClick } = useChannelDndItem(ch.id, "channel", canReorder)
+  const style = { opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 10 : undefined }
+  const showLine = isOver && !isDragging && placement !== "append"
+  const activate = () => { if (!suppressClick()) onClick() }
   const unread = selectUnreadPresentation({
     accountUnread: ch.unread,
     active,
@@ -64,8 +64,13 @@ export function SortableChannel({ ch, href, active, onClick, onEdit, onDelete, o
     ref: setNodeRef,
     style,
     "data-testid": tid.channelRow(ch.id),
-    ...(canReorder ? attributes : { role: "button", tabIndex: 0 }),
-    ...listeners,
+    "data-dragging": isDragging || undefined,
+    "data-channel-tree-row": ch.id,
+    "aria-roledescription": canReorder ? "draggable" : undefined,
+    role: "button", tabIndex: 0,
+    onPointerDownCapture: resumeClick,
+    onKeyDownCapture: (event: React.KeyboardEvent) => { if (event.key === "Enter" || event.key === " ") resumeClick() },
+    onClickCapture: (event: React.MouseEvent) => { if (suppressClick()) { event.preventDefault(); event.stopPropagation() } },
     className: [
       "group relative flex h-8 w-full cursor-pointer touch-manipulation items-center gap-2 rounded-md px-2 text-sm select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
       canReorder ? "active:cursor-grabbing" : "",
@@ -81,24 +86,23 @@ export function SortableChannel({ ch, href, active, onClick, onEdit, onDelete, o
   const content = (
     <>
       {showLine && <DropLine side={lineSide} />}
+      <ChannelUnreadIndicator visible={unread.showDot} hidden={isDragging} />
       <span className="grid size-5 shrink-0 place-items-center opacity-70">
       <EntityIcon kind={ch.type} className="size-4" />
       </span>
       <span className="truncate font-semibold">{ch.name}</span>
       {ch.muted ? (
       <BellOff className="ml-auto size-4 shrink-0 opacity-70" />
-      ) : unread.showDot ? (
-      <span className="ml-auto size-2 shrink-0 rounded-full bg-primary" />
       ) : null}
     </>
   )
   const row = href ? (
     <CommunityNavigationLink {...rowProps} role="link" href={href} active={active}
-      draggable={false} navigationDisabled={dragActive !== null} onActivate={onClick}>
+      navigationDisabled={dragActive !== null} onActivate={activate}>
       {content}
     </CommunityNavigationLink>
   ) : (
-    <div {...rowProps} onClick={onClick}>{content}</div>
+    <div {...rowProps} onClick={activate}>{content}</div>
   )
   const hasMenu = hasChannelMenu({ onEdit, onManageMembers, onDelete })
   const menuActionsRef = useRef<ContextMenuPrimitive.Root.Actions | null>(null)
@@ -111,7 +115,7 @@ export function SortableChannel({ ch, href, active, onClick, onEdit, onDelete, o
   return (
     <>
       <ContextMenu disabled={!hasMenu} actionsRef={menuActionsRef}>
-        <ContextMenuTrigger render={row} />
+        <ContextMenuTrigger render={row} onTouchStart={(event) => { if (canReorder) event.preventBaseUIHandler() }} />
         {hasMenu && <ContextMenuContent className="w-48">
           <div className="truncate px-2 py-2 text-xs font-semibold text-muted-foreground">/{ch.name}</div>
           {onEdit && <ContextMenuItem onClick={onEdit}><Pencil className="size-4" /> Edit channel</ContextMenuItem>}

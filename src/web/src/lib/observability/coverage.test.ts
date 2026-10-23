@@ -277,11 +277,6 @@ const facadeCoverage = [
   },
   {
     "file": "src/web/src/hooks/community/mutations/channels.ts",
-    "owner": "useMoveChannel",
-    "action": "channel.move"
-  },
-  {
-    "file": "src/web/src/hooks/community/mutations/channels.ts",
     "owner": "useDeleteChannel",
     "action": "channel.delete"
   },

@@ -5,11 +5,11 @@ import { useEffect, useRef } from "react"
 import { useAtom, useCreateAtom } from "@tanstack/react-store";
 
 import type React from "react"
-import { ChevronDown, Plus, Settings, Lock, Trash2 } from "lucide-react"
-import { useSortable } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
+import { ChevronDown, Plus, Settings, Folder, Lock, Trash2 } from "lucide-react"
+import { useChannelDndItem } from "./channel-dnd"
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from "@/components/ui/context-menu"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { tid } from "@/lib/community/testids"
 import { DropLine } from "../drop-line"
 
 export function hasCategoryMenu(h: { onAddChannel?: () => void; onSettings?: () => void; onDelete?: () => void }) {
@@ -20,7 +20,7 @@ export function hasCategoryMenu(h: { onAddChannel?: () => void; onSettings?: () 
 // movement or a touch long-press distinguishes collapse from reorder. It is also a drop
 // target so channels can be dropped onto it (including its empty space). Right-click
 // (or the gear) opens Settings; the "+" creates a channel; a lock shows when private.
-export function SortableCategory({ id: catDndId, name, open, onToggle, onAddChannel, onSettings, onDelete, isPrivate, canReorder = true, pending = false, children }: {
+export function SortableCategory({ id: catDndId, name, open, onToggle, onAddChannel, onSettings, onDelete, isPrivate, canReorder = true, pending = false, hasChannels, children }: {
   id: string
   name: string
   open: boolean
@@ -31,29 +31,30 @@ export function SortableCategory({ id: catDndId, name, open, onToggle, onAddChan
   isPrivate?: boolean
   canReorder?: boolean
   pending?: boolean
+  hasChannels: boolean
   children: React.ReactNode
 }) {
   const [confirmingDelete, setConfirmingDelete] = useAtom(useCreateAtom(false))
-  const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging, isOver, activeIndex, index } = useSortable({ id: catDndId, data: { kind: "category" }, disabled: !canReorder })
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 10 : undefined }
-  const showLine = isOver && !isDragging
-  const lineSide: "top" | "bottom" = activeIndex !== -1 && activeIndex < index ? "bottom" : "top"
+  const { setActivatorNodeRef, setNodeRef, isDragging, isOver, placement, lineSide, suppressClick, resumeClick } = useChannelDndItem(catDndId, "category", canReorder)
+  const style = { opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 10 : undefined }
+  const showLine = isOver && !isDragging && placement !== "append"
   const headerProps = {
     ref: setActivatorNodeRef,
-    ...(canReorder ? attributes : { role: "button", tabIndex: 0 }),
-    ...listeners,
-    onTouchStart: undefined,
-    onTouchStartCapture: listeners?.onTouchStart
-      ? (event: React.TouchEvent<HTMLDivElement>) => listeners.onTouchStart?.(event)
-      : undefined,
-    onClick: onToggle,
-    className: `group flex w-full touch-manipulation items-center gap-1 rounded px-1 py-1 text-xs font-semibold text-muted-foreground/80 select-none hover:text-foreground ${canReorder ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`,
+    "data-testid": tid.categoryHeader(catDndId),
+    "data-dragging": isDragging || undefined,
+    role: "button", tabIndex: 0,
+    "aria-label": name,
+    "aria-description": isPrivate ? "Private category" : "Public category",
+    "aria-expanded": hasChannels ? open : undefined,
+    onPointerDownCapture: resumeClick,
+    onKeyDownCapture: (event: React.KeyboardEvent) => { if (event.key === "Enter" || event.key === " ") resumeClick() },
+    onClick: () => { if (hasChannels && !suppressClick()) onToggle() },
+    onKeyDown: (event: React.KeyboardEvent) => { if (event.target === event.currentTarget && hasChannels && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); if (!suppressClick()) onToggle() } },
+    className: `group flex w-full touch-manipulation items-center gap-1 rounded px-1 py-1 text-xs font-semibold text-muted-foreground/80 select-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${placement === "append" ? "bg-primary/5 ring-1 ring-primary" : ""} ${canReorder ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`,
   }
   const headerInner = (
     <>
-      {/* Always reserve the lock's slot so public + private category names share
-          the same left edge (private shows the Lock, public a same-size spacer). */}
-      {isPrivate ? <Lock className="size-3 shrink-0" /> : <span className="size-3 shrink-0" aria-hidden="true" />}
+      {isPrivate ? <Lock className="size-3 shrink-0" aria-hidden="true" /> : <Folder className="size-3 shrink-0" aria-hidden="true" />}
       <span className="flex-1 truncate text-left">{name}</span>
       {onSettings && (
       <button
@@ -75,7 +76,7 @@ export function SortableCategory({ id: catDndId, name, open, onToggle, onAddChan
         <Plus className="size-3.5" />
       </button>
       )}
-      <ChevronDown className={`size-3 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`} />
+      {hasChannels && <ChevronDown className={`size-3 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`} />}
     </>
   )
   const hasMenu = hasCategoryMenu({ onAddChannel, onSettings, onDelete })
@@ -87,10 +88,10 @@ export function SortableCategory({ id: catDndId, name, open, onToggle, onAddChan
     }
   }, [hasMenu])
   return (
-    <div ref={setNodeRef} style={style} className={`relative mb-4 ${pending ? "opacity-60" : ""}`}>
+    <div ref={setNodeRef} data-channel-category={catDndId} style={style} className={`relative mb-4 ${pending ? "opacity-60" : ""}`}>
       {showLine && <DropLine side={lineSide} />}
       <ContextMenu disabled={!hasMenu} actionsRef={menuActionsRef}>
-        <ContextMenuTrigger render={<div {...headerProps} />}>
+        <ContextMenuTrigger render={<div {...headerProps} />} onTouchStart={(event) => { if (canReorder) event.preventBaseUIHandler() }}>
           {headerInner}
         </ContextMenuTrigger>
         {hasMenu && <ContextMenuContent className="w-48">

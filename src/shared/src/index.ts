@@ -604,6 +604,7 @@ export type {
   CommunityChildChannelCreate,
   CommunityChildChannelUpdate,
   CommunityServerUpdate,
+  CommunityServerRailChanged,
   CommunityServerDelete,
   CommunityChannelCreate,
   CommunityChannelUpdate,
@@ -712,11 +713,16 @@ export {
   MAX_SERVER_RAIL_REQUEST_BYTES,
   SERVER_RAIL_SNAPSHOT_STATEMENTS,
   SERVER_RAIL_MAX_WRITE_STATEMENTS,
+  serverRailEntrySchema,
+  serverRailTopOrder,
+  serverRailServerIds,
+  sortServerRailRows,
   serverRailCommandSchema,
   serverRailCommitRequestSchema,
   projectServerRailCommit,
 } from "./community-server-rail";
 export type {
+  ServerRailEntry,
   ServerRailCommand,
   ServerRailCommitRequest,
   ServerRailCommitResponse,
@@ -729,7 +735,7 @@ export * as schema from "./db/schema";
 export * as queries from "./db/queries-index";
 export { BotCreationError, resolveBotCreationConfiguration, BotCreationProposalSchema, BotCreationSubmitSchema, BotCreationPayloadSchema, BotCreationDecisionSchema, BOT_CREATION_MAX_ITEMS, BOT_CREATION_BODY_MAX_BYTES } from "./community-bot-creation";
 export type { BotCreationProposal, BotCreationSubmit, BotCreationItem, BotCreationPayload } from "./community-bot-creation";
-export { communityServer, communityServerInvite, communityFriendship, communityServerMember, communityServerFolder, communityServerFolderItem, communityBotActivityEvent, communityBotDailyActivity, communityPushDevice } from "./db/community-schema";
+export { communityServer, communityServerInvite, communityFriendship, communityServerMember, communityServerRail, communityServerFolder, communityServerFolderItem, communityBotActivityEvent, communityBotDailyActivity, communityPushDevice } from "./db/community-schema";
 
 // Logger
 export { Logger, createLogger } from "./logger"
@@ -831,5 +837,6 @@ export * from "./community-resources";
 export * from "./runtime-models-contract";
 
 export { readBoundedJsonRequest } from "./http-json";
+export { channelReorderRequestSchema, type ChannelReorderRequest, type ChannelCategoryMove } from "./community-channel-order";
 
 export type { PlatformMachineRequest, PlatformBotRequest } from "./community-platform";
