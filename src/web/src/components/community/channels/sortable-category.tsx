@@ -35,7 +35,7 @@ export function SortableCategory({ id: catDndId, name, open, onToggle, onAddChan
 }) {
   const [confirmingDelete, setConfirmingDelete] = useAtom(useCreateAtom(false))
   const { setActivatorNodeRef, setNodeRef, isDragging, isOver, placement, lineSide, suppressClick, resumeClick } = useChannelDndItem(catDndId, "category", canReorder)
-  const style = { opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 10 : undefined }
+  const style = { opacity: isDragging ? 0.3 : 1, zIndex: isDragging ? 10 : undefined }
   const showLine = isOver && !isDragging && placement !== "append"
   const headerProps = {
     ref: setActivatorNodeRef,
@@ -46,6 +46,7 @@ export function SortableCategory({ id: catDndId, name, open, onToggle, onAddChan
     "aria-description": isPrivate ? "Private category" : "Public category",
     "aria-expanded": hasChannels ? open : undefined,
     onPointerDownCapture: resumeClick,
+    onTouchStartCapture: resumeClick,
     onKeyDownCapture: (event: React.KeyboardEvent) => { if (event.key === "Enter" || event.key === " " || isKeyboardContextMenu(event.nativeEvent)) resumeClick() },
     onClick: () => { if (hasChannels && !suppressClick()) onToggle() },
     onKeyDown: (event: React.KeyboardEvent) => { if (event.target === event.currentTarget && hasChannels && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); if (!suppressClick()) onToggle() } },
@@ -53,11 +54,13 @@ export function SortableCategory({ id: catDndId, name, open, onToggle, onAddChan
   }
   const headerInner = (
     <>
-      {isPrivate ? <Lock className="size-3 shrink-0" aria-hidden="true" /> : <Folder className="size-3 shrink-0" aria-hidden="true" />}
-      <span className="flex-1 truncate text-left">{name}</span>
+      {isPrivate ? <Lock className="pointer-events-none size-3 shrink-0" aria-hidden="true" /> : <Folder className="pointer-events-none size-3 shrink-0" aria-hidden="true" />}
+      <span className="pointer-events-none flex-1 truncate text-left">{name}</span>
       {onSettings && (
       <button
         onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onDragStart={(e) => { e.preventDefault(); e.stopPropagation() }}
         onClick={(e) => { e.stopPropagation(); onSettings() }}
         className="grid size-4 place-items-center rounded opacity-0 hover:bg-accent group-hover:opacity-100"
         aria-label={`Category settings for ${name}`}
@@ -68,6 +71,8 @@ export function SortableCategory({ id: catDndId, name, open, onToggle, onAddChan
       {onAddChannel && (
       <button
         onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onDragStart={(e) => { e.preventDefault(); e.stopPropagation() }}
         onClick={(e) => { e.stopPropagation(); onAddChannel() }}
         className="grid size-4 place-items-center rounded opacity-0 hover:bg-accent group-hover:opacity-100"
         aria-label={`Create channel in ${name}`}
@@ -75,7 +80,7 @@ export function SortableCategory({ id: catDndId, name, open, onToggle, onAddChan
         <Plus className="size-3.5" />
       </button>
       )}
-      {hasChannels && <ChevronDown className={`size-3 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`} />}
+      {hasChannels && <ChevronDown className={`pointer-events-none size-3 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`} />}
     </>
   )
   const hasMenu = hasCategoryMenu({ onAddChannel, onSettings, onDelete })
