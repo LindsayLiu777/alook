@@ -1,3 +1,4 @@
+vi.mock("./upload-body", () => ({ readUploadFormData: (req: Request) => req.formData(), UploadTooLargeError: class extends Error {} }))
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { NextRequest } from "next/server"
 import { structuredJpegFixture } from "@/test/fixtures/media"
@@ -94,7 +95,7 @@ function reqWithUpload(file: unknown, thumbnail: unknown, width = "640", height 
   const req = new NextRequest("http://localhost/u", { method: "POST" })
   req.formData = (async () => {
     const values: Record<string, unknown> = { file, thumbnail, width, height }
-    return { get: (key: string) => values[key] ?? null } as unknown as FormData
+    return { keys: () => Object.keys(values), get: (key: string) => values[key] ?? null } as unknown as FormData
   }) as typeof req.formData
   return req
 }
@@ -784,4 +785,35 @@ describe("runAttachmentUpload", () => {
     expect(response.status).toBe(500)
     expect(del).not.toHaveBeenCalled()
   })
+})
+
+it.each(["extra", "file"])("rejects unexpected or repeated multipart field %s before storage writes", async (key) => {
+  const put = vi.fn()
+  const request = new NextRequest("http://localhost/upload", { method: "POST" })
+  const form = new FormData()
+  form.append("file", new File(["hello"], "a.txt"))
+  form.append(key, "ignored")
+  request.formData = async () => form
+  const result = await handleAttachmentUpload(request, envWithR2(put))
+  expect(result.ok).toBe(false)
+  expect(put).not.toHaveBeenCalled()
+})
+
+it("rejects a string thumbnail before writing storage", async () => {
+  const put = vi.fn()
+  const result = await handleAttachmentUpload(reqWithUpload(fakeFile("a.png", "image/png", 10), "invalid"), envWithR2(put))
+  expect(result.ok).toBe(false)
+  if (!result.ok) expect(await result.response.json()).toMatchObject({ error: "invalid thumbnail" })
+  expect(put).not.toHaveBeenCalled()
+})
+
+import { UploadTooLargeError } from "./upload-body"
+it.each([[new UploadTooLargeError(), 413], [new Error("malformed"), 400]] as const)("maps multipart reader failure to status %s %s without R2 writes", async (error, status) => {
+  const request = new NextRequest("http://localhost/upload", { method: "POST" })
+  request.formData = async () => { throw error }
+  const put = vi.fn()
+  const result = await handleAttachmentUpload(request, envWithR2(put))
+  expect(result.ok).toBe(false)
+  if (!result.ok) expect(result.response.status).toBe(status)
+  expect(put).not.toHaveBeenCalled()
 })
